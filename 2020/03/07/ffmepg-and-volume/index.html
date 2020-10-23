@@ -34,7 +34,7 @@
 <meta property="og:image" content="http://blog.tubumu.com/postimages/ffmpeg-and-volume/005.png">
 <meta property="og:image" content="http://blog.tubumu.com/postimages/ffmpeg-and-volume/006.png">
 <meta property="article:published_time" content="2020-03-07T13:07:16.000Z">
-<meta property="article:modified_time" content="2020-10-22T21:01:33.018Z">
+<meta property="article:modified_time" content="2020-10-23T10:17:31.152Z">
 <meta property="article:author" content="Alby">
 <meta property="article:tag" content="FFmpeg">
 <meta property="article:tag" content="Audio">
@@ -202,7 +202,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2020-10-23 05:01:33" itemprop="dateModified" datetime="2020-10-23T05:01:33+08:00">2020-10-23</time>
+                <time title="修改时间：2020-10-23 18:17:31" itemprop="dateModified" datetime="2020-10-23T18:17:31+08:00">2020-10-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -233,11 +233,19 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i 唱歌跳舞Rap打篮球.mp3 -af &quot;volumedetect&quot; -f null /dev/null</span><br></pre></td></tr></table></figure>
 
 <p>或者：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i 唱歌跳舞Rap打篮球.wav -filter_complex volumedetect -c:v copy -f null /dev/null</span><br></pre></td></tr></table></figure>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -i 唱歌跳舞Rap打篮球.mp3 -filter_complex volumedetect -f null /dev/null</span><br></pre></td></tr></table></figure>
 
+<blockquote>
+<p>备注：在 Windows 命令行下 <code>-f null /dev/null</code> 改为 <code> -f null -</code>。</p>
+</blockquote>
 <p><img src="/postimages/ffmpeg-and-volume/002.png"><br>图2：FFmpeg 获取音量</p>
 <p>从输出信息可以看到平均(均方：mean square)音量是 -23.5dB；最大音量是 -2.8dB；7个采样是 -2dB，28个采样是 -3dB，29个采样是 -4dB，48个采样是 -5dB，84个采样是 -6dB。</p>
-<h2 id="三、简单音量调整"><a href="#三、简单音量调整" class="headerlink" title="三、简单音量调整"></a>三、简单音量调整</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 增大 10dB</span></span><br><span class="line">ffmpeg -i 唱歌跳舞Rap打篮球.wav -af volume=10dB 唱歌跳舞Rap打篮球+10dB.wav</span><br></pre></td></tr></table></figure>
+<h2 id="三、静音检测"><a href="#三、静音检测" class="headerlink" title="三、静音检测"></a>三、静音检测</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -nostats -i 唱歌跳舞Rap打篮球.mp3 -af silencedetect=noise=0.2 -f null /dev/null</span><br></pre></td></tr></table></figure>
+
+<p>结果形如：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">[silencedetect @ 000001b6126d8c00] silence_start: 8.46868</span><br><span class="line">[silencedetect @ 000001b6126d83c0] silence_start: 8.46868</span><br><span class="line">[silencedetect @ 000001b6126d8c00] silence_end: 11.9019 | silence_duration: 3.43317</span><br><span class="line">[silencedetect @ 000001b6126d83c0] silence_end: 11.9019 | silence_duration: 3.43317</span><br><span class="line">[silencedetect @ 000001b6126d8c00] silence_start: 25.8495</span><br><span class="line">[silencedetect @ 000001b6126d83c0] silence_start: 25.8495</span><br><span class="line">[silencedetect @ 000001b6126d8c00] silence_end: 28.9557 | silence_duration: 3.10619</span><br><span class="line">[silencedetect @ 000001b6126d83c0] silence_end: 28.9557 | silence_duration: 3.10619</span><br><span class="line">[silencedetect @ 000001b6126d8c00] silence_start: 29.0869</span><br><span class="line">[silencedetect @ 000001b6126d83c0] silence_start: 29.0869</span><br><span class="line">[silencedetect @ 000001b6126d8c00] silence_end: 33.6089 | silence_duration: 4.522</span><br><span class="line">[silencedetect @ 000001b6126d83c0] silence_end: 33.6089 | silence_duration: 4.522</span><br><span class="line">[silencedetect @ 000001b6126d8c00] silence_start: 38.6068</span><br><span class="line">[silencedetect @ 000001b6126d83c0] silence_start: 38.6068</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、简单音量调整"><a href="#四、简单音量调整" class="headerlink" title="四、简单音量调整"></a>四、简单音量调整</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 增大 10dB</span></span><br><span class="line">ffmpeg -i 唱歌跳舞Rap打篮球.wav -af volume=10dB 唱歌跳舞Rap打篮球+10dB.wav</span><br></pre></td></tr></table></figure>
 
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 减小 10dB</span></span><br><span class="line">ffmpeg -i 唱歌跳舞Rap打篮球.wav -af volume=-10dB 唱歌跳舞Rap打篮球-10dB.wav</span><br></pre></td></tr></table></figure>
 
@@ -245,13 +253,13 @@
 
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 设置为原音量的2倍（没有dB单位）</span></span><br><span class="line">ffmpeg -i 唱歌跳舞Rap打篮球.wav -af volume=2 唱歌跳舞Rap打篮球(2).wav</span><br></pre></td></tr></table></figure>
 
-<h2 id="四、淡入淡出"><a href="#四、淡入淡出" class="headerlink" title="四、淡入淡出"></a>四、淡入淡出</h2><p>为了方便实验，我从歌曲《追光者》截取了一段，其波形图如下：<br><img src="/postimages/ffmpeg-and-volume/003.png"><br>图3：《追光者》节选波形图</p>
+<h2 id="五、淡入淡出"><a href="#五、淡入淡出" class="headerlink" title="五、淡入淡出"></a>五、淡入淡出</h2><p>为了方便实验，我从歌曲《追光者》截取了一段，其波形图如下：<br><img src="/postimages/ffmpeg-and-volume/003.png"><br>图3：《追光者》节选波形图</p>
 <p>故意留了一个突兀的结尾。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 从开头5秒淡入，从18秒5秒淡出；在淡出之后剩余部分将静音</span></span><br><span class="line">ffmpeg -i 追光者01.mp3 -filter_complex &quot;[0:a]afade=t=in:ss=0:d=5[a1];[a1]afade=t=out:st=18:d=5&quot; 追光者02.mp3</span><br></pre></td></tr></table></figure>
 
 <p><img src="/postimages/ffmpeg-and-volume/004.png"><br>图4：《追光者》节选淡入淡出后的波形图</p>
 <p>对比原波形图可以看出，在有声部分呈三角形。</p>
-<h2 id="五、复杂音量调整"><a href="#五、复杂音量调整" class="headerlink" title="五、复杂音量调整"></a>五、复杂音量调整</h2><p>需求：</p>
+<h2 id="六、复杂音量调整"><a href="#六、复杂音量调整" class="headerlink" title="六、复杂音量调整"></a>六、复杂音量调整</h2><p>需求：</p>
 <p>1、《追光者》前4秒淡入<br>2、继续播放3秒(此时音量为原音量)<br>3、3秒淡出为原来的1/10（不是完全淡出）<br>4、播放4.5秒(此时音量为原音量1/10)<br>5、4秒淡入<br>6、继续播放(此时音量为原音量)<br>7、最后5秒淡出</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -y -i 追光者01.mp3 -filter_complex &quot;volume=enable=&#x27;between(t,0,4)&#x27;:volume=&#x27;t/4.0&#x27;:eval=frame,volume=enable=&#x27;between(t,4,7)&#x27;:volume=&#x27;1.0&#x27;:eval=frame,volume=enable=&#x27;between(t,7,10)&#x27;:volume=&#x27;0.1+(0.9-0.9*(t-7.0)/3.0)&#x27;:eval=frame,volume=enable=&#x27;between(t,10,14.5)&#x27;:volume=&#x27;0.1&#x27;:eval=frame,volume=enable=&#x27;between(t,14.5,18.5)&#x27;:volume=&#x27;0.1+(0.9*(t-14.5)/4.0)&#x27;:eval=frame,volume=enable=&#x27;between(t,18.5,23.292)&#x27;:volume=&#x27;1.0&#x27;:eval=frame,volume=enable=&#x27;between(t,23.292,28.292)&#x27;:volume=&#x27;1.0-(t-23.292)/5.0&#x27;:eval=frame&quot; 且听且吟01.mp3</span><br></pre></td></tr></table></figure>
 
@@ -259,7 +267,7 @@
 <blockquote>
 <p>备注：《追光者》节选时长为 28.292s 。</p>
 </blockquote>
-<h2 id="六、混缩"><a href="#六、混缩" class="headerlink" title="六、混缩"></a>六、混缩</h2><p>需求：</p>
+<h2 id="七、混缩"><a href="#七、混缩" class="headerlink" title="七、混缩"></a>七、混缩</h2><p>需求：</p>
 <p>1、《追光者》前4秒淡入<br>2、继续播放3秒(此时音量为原音量)<br>3、3秒淡出为原来的1/10（不是完全淡出）<br>4、播放4.5秒，<strong>与之前录制的《唱歌跳舞Rap打篮球》混缩</strong><br>5、4秒淡入<br>6、继续播放(此时音量为原音量)<br>7、最后5秒淡出</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffmpeg -y -i 追光者01.mp3 -i 唱歌跳舞Rap打篮球.wav -filter_complex &quot;[0:a]volume=enable=&#x27;between(t,0,4)&#x27;:volume=&#x27;t/4.0&#x27;:eval=frame,volume=enable=&#x27;between(t,4,7)&#x27;:volume=&#x27;1.0&#x27;:eval=frame,volume=enable=&#x27;between(t,7,10)&#x27;:volume=&#x27;0.1+(0.9-0.9*(t-7.0)/3.0)&#x27;:eval=frame,volume=enable=&#x27;between(t,10,14.5)&#x27;:volume=&#x27;0.1&#x27;:eval=frame,volume=enable=&#x27;between(t,14.5,18.5)&#x27;:volume=&#x27;0.1+(0.9*(t-14.5)/4.0)&#x27;:eval=frame,volume=enable=&#x27;between(t,18.5,23.292)&#x27;:volume=&#x27;1.0&#x27;:eval=frame,volume=enable=&#x27;between(t,23.292,28.292)&#x27;:volume=&#x27;1.0-(t-23.292)/5.0&#x27;:eval=frame[a0];[1:a]adelay=10000|10000[a1];[a0][a1]amix=inputs=2:duration=longest:dropout_transition=10000,volume=2,pan=stereo|c0&lt;c0+c2|c1&lt;c1+c3[a]&quot; -map &quot;[a]&quot; 且听且吟02.mp3</span><br></pre></td></tr></table></figure>
 
@@ -352,7 +360,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E9%9F%B3%E9%87%8F%E6%A3%80%E6%B5%8B"><span class="nav-text">二、音量检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%AE%80%E5%8D%95%E9%9F%B3%E9%87%8F%E8%B0%83%E6%95%B4"><span class="nav-text">三、简单音量调整</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E6%B7%A1%E5%85%A5%E6%B7%A1%E5%87%BA"><span class="nav-text">四、淡入淡出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%A4%8D%E6%9D%82%E9%9F%B3%E9%87%8F%E8%B0%83%E6%95%B4"><span class="nav-text">五、复杂音量调整</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E6%B7%B7%E7%BC%A9"><span class="nav-text">六、混缩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-text">参考资料</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E9%9F%B3%E9%87%8F%E6%A3%80%E6%B5%8B"><span class="nav-text">二、音量检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E9%9D%99%E9%9F%B3%E6%A3%80%E6%B5%8B"><span class="nav-text">三、静音检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E7%AE%80%E5%8D%95%E9%9F%B3%E9%87%8F%E8%B0%83%E6%95%B4"><span class="nav-text">四、简单音量调整</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E6%B7%A1%E5%85%A5%E6%B7%A1%E5%87%BA"><span class="nav-text">五、淡入淡出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E5%A4%8D%E6%9D%82%E9%9F%B3%E9%87%8F%E8%B0%83%E6%95%B4"><span class="nav-text">六、复杂音量调整</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81%E6%B7%B7%E7%BC%A9"><span class="nav-text">七、混缩</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-text">参考资料</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -386,6 +394,11 @@
       </div>
   </nav>
 </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/albyho" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;albyho" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
 
 
 
