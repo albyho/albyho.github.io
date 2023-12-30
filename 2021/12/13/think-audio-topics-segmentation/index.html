@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.tubumu.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、概述基于电视节目的特征，包括视觉特征、音频特征、文本特征、压缩域特征等，对新闻节目进行结构化分析，然后采用视频分割技术将连续的视频流分割为具有特定语义的多个小视频，这就是电视新闻拆条。经过拆条后的电视新闻节目，可以用于互动电视、OTT、互联网视频等多种应用场景，满足了新媒体行业对视听节目碎片化的要求。 如果仅有音频数据需对其拆条，就只能主要通过音频特征和通过语音识别出来的文本特征了。 拆条需求">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于音频切条的分析">
+<meta property="og:url" content="http://blog.tubumu.com/2021/12/13/think-audio-topics-segmentation/index.html">
+<meta property="og:site_name" content="Alby&#39;s blog">
+<meta property="og:description" content="一、概述基于电视节目的特征，包括视觉特征、音频特征、文本特征、压缩域特征等，对新闻节目进行结构化分析，然后采用视频分割技术将连续的视频流分割为具有特定语义的多个小视频，这就是电视新闻拆条。经过拆条后的电视新闻节目，可以用于互动电视、OTT、互联网视频等多种应用场景，满足了新媒体行业对视听节目碎片化的要求。 如果仅有音频数据需对其拆条，就只能主要通过音频特征和通过语音识别出来的文本特征了。 拆条需求">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-12T17:09:50.000Z">
+<meta property="article:modified_time" content="2021-12-13T04:15:28.889Z">
+<meta property="article:author" content="Alby">
+<meta property="article:tag" content="Audio">
+<meta property="article:tag" content="ML">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://blog.tubumu.com/2021/12/13/think-audio-topics-segmentation/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>关于音频切条的分析 | Alby's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alby's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">世上没有巧合，只有巧合的假象。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/albyho" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2021/12/13/think-audio-topics-segmentation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          关于音频切条的分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-12-13 01:09:50 / 修改时间：12:15:28" itemprop="dateCreated datePublished" datetime="2021-12-13T01:09:50+08:00">2021-12-13</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Audio/" itemprop="url" rel="index"><span itemprop="name">Audio</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>基于电视节目的特征，包括视觉特征、音频特征、文本特征、压缩域特征等，对新闻节目进行结构化分析，然后采用视频分割技术将连续的视频流分割为具有特定语义的多个小视频，这就是电视新闻拆条。经过拆条后的电视新闻节目，可以用于互动电视、OTT、互联网视频等多种应用场景，满足了新媒体行业对视听节目碎片化的要求。</p>
+<p>如果仅有音频数据需对其拆条，就只能主要通过音频特征和通过语音识别出来的文本特征了。</p>
+<p>拆条需求是能够拆节目，也能够拆节目里的片段。比如新闻联播和新闻联播里每一条新闻。对应命名为<code>整档拆条</code>和<code>片段拆条</code>。</p>
+<span id="more"></span>
+
+<h2 id="二、哪些具体特征可用于辅助拆条？"><a href="#二、哪些具体特征可用于辅助拆条？" class="headerlink" title="二、哪些具体特征可用于辅助拆条？"></a>二、哪些具体特征可用于辅助拆条？</h2><p>拆条的本质是整档节目或节目的片段的开播时间和结束时间。</p>
+<h3 id="1、播出时段"><a href="#1、播出时段" class="headerlink" title="1、播出时段"></a>1、播出时段</h3><p>某些节目在固定时段播出，比如新闻联播。对于这类节目可以限定开拆时间以减少运算量和减小误判率。对于<code>片段</code>来说，播出时段意义不大。</p>
+<blockquote>
+<p>问题：</p>
+<ol>
+<li>某些节目并没有固定播出时间。</li>
+<li>固定时段开播的节目也可能超时。</li>
+<li>如果是离线处理，有可能不知道音频是在什么时候播出的。</li>
+</ol>
+</blockquote>
+<h3 id="2、片头"><a href="#2、片头" class="headerlink" title="2、片头"></a>2、片头</h3><p>节目一般都有相对固定的片头，有可能是纯音乐也可能是音乐和人声的混合。对于<code>片段</code>来说，几乎没有片头。</p>
+<blockquote>
+<p>问题：</p>
+<ol>
+<li>确实有些节目没有固定的片头。</li>
+<li>依赖于片头识别的准确率。</li>
+</ol>
+</blockquote>
+<h3 id="3、关键字"><a href="#3、关键字" class="headerlink" title="3、关键字"></a>3、关键字</h3><p>通过语音识别(ASR)识别出音频的文本内容，再根据关键字匹配。可使用多个关键字组合判断。</p>
+<blockquote>
+<p>问题：</p>
+<ol>
+<li>非常依赖语音识别引擎的性能，包括准确率和运行速度等。</li>
+<li>新闻里被采访人发音口音问题将降低识别率。</li>
+<li>因为文本内容也可能不完全固定，所以还依赖于语法分析引擎的鲁棒性。</li>
+</ol>
+</blockquote>
+<h3 id="4、语法结构"><a href="#4、语法结构" class="headerlink" title="4、语法结构"></a>4、语法结构</h3><p>主要用于<code>片段</code>的识别。</p>
+<ol>
+<li><code>时间+地点</code>结构。</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">八号零点到十四点 满洲里市...</span><br><span class="line">昨天 江苏南京</span><br><span class="line">12月7号 上海新增一轮</span><br><span class="line">昨天零至24时,云南省</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>先读标题，然后再读详细内容。</li>
+</ol>
+<p>比如《中国之声》的《新闻和报纸摘要》。</p>
+<hr>
+<blockquote>
+<p>问题：</p>
+<ol>
+<li>依赖语法分析引擎。</li>
+<li>需要收集更多的语法结构。</li>
+</ol>
+</blockquote>
+<h3 id="5、声纹"><a href="#5、声纹" class="headerlink" title="5、声纹"></a>5、声纹</h3><p>某些节目有多位主播，在切换主播时通常片段也发生了切换。顺便能够判断是否包含背景音乐。</p>
+<blockquote>
+<p>问题：</p>
+<ol>
+<li>新闻内的采访将导致误判。</li>
+<li>除非对主播的声纹进行标记。</li>
+<li>就算对主播的声纹进行了标记，在读取详情的时候，同一条新闻里主播和被采访人的发声也有交叉。</li>
+</ol>
+</blockquote>
+<blockquote>
+<p>片头识别也属于声纹范畴。</p>
+</blockquote>
+<h3 id="6、节目-片段-时长"><a href="#6、节目-片段-时长" class="headerlink" title="6、节目(片段)时长"></a>6、节目(片段)时长</h3><p>对于识别到开始，在一定时长内没有识别到结束，就只能废弃该节目或片段。</p>
+<h2 id="三、确定开拆点-或完拆点"><a href="#三、确定开拆点-或完拆点" class="headerlink" title="三、确定开拆点(或完拆点)"></a>三、确定开拆点(或完拆点)</h2><p>在识别成功后不能马上开始剪切，要寻找真正的开拆点(或完拆点)，有两种方式：</p>
+<ol>
+<li>在当前位置之前或之后的静音来确定开拆点(或完拆点)，可能是第一个也可能不是。问题是，依赖于静音判断的准确度。</li>
+<li>在当前位置之前或之后的某个固定时长确定开拆点(或完拆点)。问题是，如果设置不准确将导致剪切不准确。</li>
+</ol>
+<h2 id="四、归档处理"><a href="#四、归档处理" class="headerlink" title="四、归档处理"></a>四、归档处理</h2><h3 id="1、拆条标题"><a href="#1、拆条标题" class="headerlink" title="1、拆条标题"></a>1、拆条标题</h3><p>能够根据内容生成一个标题。</p>
+<h3 id="2、拆条标签"><a href="#2、拆条标签" class="headerlink" title="2、拆条标签"></a>2、拆条标签</h3><p>能够根据内容生成多个标签。</p>
+<h2 id="五、容错"><a href="#五、容错" class="headerlink" title="五、容错"></a>五、容错</h2><p>杜绝时政类内容差错，杜绝节目内容中断，杜绝标题错误，广告需完全去除。</p>
+<h2 id="六、音质导致的语音识别的问题"><a href="#六、音质导致的语音识别的问题" class="headerlink" title="六、音质导致的语音识别的问题"></a>六、音质导致的语音识别的问题</h2><h3 id="1-夹杂其他语言，并且和主持人的发音重叠"><a href="#1-夹杂其他语言，并且和主持人的发音重叠" class="headerlink" title="1. 夹杂其他语言，并且和主持人的发音重叠"></a>1. 夹杂其他语言，并且和主持人的发音重叠</h3><p>比如：《新闻和报纸摘要》2021年12月13日 星期一，07:00:00-07:30:00，片段位置：25:34。</p>
+<h3 id="2-被采访人方言口音严重"><a href="#2-被采访人方言口音严重" class="headerlink" title="2. 被采访人方言口音严重"></a>2. 被采访人方言口音严重</h3>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Audio/" rel="tag"># Audio</a>
+              <a href="/tags/ML/" rel="tag"># ML</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/12/12/ml-test-wenet/" rel="prev" title="端到端语音识别工具包 WeNet 的编译及运行">
+      <i class="fa fa-chevron-left"></i> 端到端语音识别工具包 WeNet 的编译及运行
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/03/11/nginx-server-port/" rel="next" title="Nginx server_port 变量对批量端口反向代理的简单应用两则">
+      Nginx server_port 变量对批量端口反向代理的简单应用两则 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%93%AA%E4%BA%9B%E5%85%B7%E4%BD%93%E7%89%B9%E5%BE%81%E5%8F%AF%E7%94%A8%E4%BA%8E%E8%BE%85%E5%8A%A9%E6%8B%86%E6%9D%A1%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">二、哪些具体特征可用于辅助拆条？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E6%92%AD%E5%87%BA%E6%97%B6%E6%AE%B5"><span class="nav-number">2.1.</span> <span class="nav-text">1、播出时段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E7%89%87%E5%A4%B4"><span class="nav-number">2.2.</span> <span class="nav-text">2、片头</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3%E3%80%81%E5%85%B3%E9%94%AE%E5%AD%97"><span class="nav-number">2.3.</span> <span class="nav-text">3、关键字</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4%E3%80%81%E8%AF%AD%E6%B3%95%E7%BB%93%E6%9E%84"><span class="nav-number">2.4.</span> <span class="nav-text">4、语法结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5%E3%80%81%E5%A3%B0%E7%BA%B9"><span class="nav-number">2.5.</span> <span class="nav-text">5、声纹</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6%E3%80%81%E8%8A%82%E7%9B%AE-%E7%89%87%E6%AE%B5-%E6%97%B6%E9%95%BF"><span class="nav-number">2.6.</span> <span class="nav-text">6、节目(片段)时长</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81%E7%A1%AE%E5%AE%9A%E5%BC%80%E6%8B%86%E7%82%B9-%E6%88%96%E5%AE%8C%E6%8B%86%E7%82%B9"><span class="nav-number">3.</span> <span class="nav-text">三、确定开拆点(或完拆点)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%BD%92%E6%A1%A3%E5%A4%84%E7%90%86"><span class="nav-number">4.</span> <span class="nav-text">四、归档处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E6%8B%86%E6%9D%A1%E6%A0%87%E9%A2%98"><span class="nav-number">4.1.</span> <span class="nav-text">1、拆条标题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E6%8B%86%E6%9D%A1%E6%A0%87%E7%AD%BE"><span class="nav-number">4.2.</span> <span class="nav-text">2、拆条标签</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81%E5%AE%B9%E9%94%99"><span class="nav-number">5.</span> <span class="nav-text">五、容错</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81%E9%9F%B3%E8%B4%A8%E5%AF%BC%E8%87%B4%E7%9A%84%E8%AF%AD%E9%9F%B3%E8%AF%86%E5%88%AB%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">6.</span> <span class="nav-text">六、音质导致的语音识别的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E5%A4%B9%E6%9D%82%E5%85%B6%E4%BB%96%E8%AF%AD%E8%A8%80%EF%BC%8C%E5%B9%B6%E4%B8%94%E5%92%8C%E4%B8%BB%E6%8C%81%E4%BA%BA%E7%9A%84%E5%8F%91%E9%9F%B3%E9%87%8D%E5%8F%A0"><span class="nav-number">6.1.</span> <span class="nav-text">1. 夹杂其他语言，并且和主持人的发音重叠</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E8%A2%AB%E9%87%87%E8%AE%BF%E4%BA%BA%E6%96%B9%E8%A8%80%E5%8F%A3%E9%9F%B3%E4%B8%A5%E9%87%8D"><span class="nav-number">6.2.</span> <span class="nav-text">2. 被采访人方言口音严重</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alby"
+      src="/images/avatar200x200.png">
+  <p class="site-author-name" itemprop="name">Alby</p>
+  <div class="site-description" itemprop="description">Catch.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">50</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/albyho" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;albyho" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alby Email: echo "YWxieUBmb3htYWlsLmNvbQo=" | base64 -D</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

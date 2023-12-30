@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.tubumu.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、概述pyannote.audio 直接能够进行 Speaker Verification、Speaker Diarization 等任务，但尚未提供 Speaker Identification。 本文简述如何基于 pyannote.audio 进行 Speaker Identification。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于 pyannote.audio 实现 Speaker Identification（说话人识别）">
+<meta property="og:url" content="http://blog.tubumu.com/2023/04/04/speech-speaker-identification-using-pyannote-audio/index.html">
+<meta property="og:site_name" content="Alby&#39;s blog">
+<meta property="og:description" content="一、概述pyannote.audio 直接能够进行 Speaker Verification、Speaker Diarization 等任务，但尚未提供 Speaker Identification。 本文简述如何基于 pyannote.audio 进行 Speaker Identification。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-04-04T14:13:45.000Z">
+<meta property="article:modified_time" content="2023-05-13T19:09:09.283Z">
+<meta property="article:author" content="Alby">
+<meta property="article:tag" content="Audio">
+<meta property="article:tag" content="Speech">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://blog.tubumu.com/2023/04/04/speech-speaker-identification-using-pyannote-audio/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>基于 pyannote.audio 实现 Speaker Identification（说话人识别） | Alby's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alby's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">世上没有巧合，只有巧合的假象。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/albyho" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2023/04/04/speech-speaker-identification-using-pyannote-audio/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基于 pyannote.audio 实现 Speaker Identification（说话人识别）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-04 22:13:45" itemprop="dateCreated datePublished" datetime="2023-04-04T22:13:45+08:00">2023-04-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-05-14 03:09:09" itemprop="dateModified" datetime="2023-05-14T03:09:09+08:00">2023-05-14</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Speech/" itemprop="url" rel="index"><span itemprop="name">Speech</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p><code>pyannote.audio</code> 直接能够进行 <code>Speaker Verification</code>、<code>Speaker Diarization</code> 等任务，但尚未提供 <code>Speaker Identification</code>。 本文简述如何基于 pyannote.audio 进行 Speaker Identification。</p>
+<span id="more"></span>
+<h2 id="二、实现步骤"><a href="#二、实现步骤" class="headerlink" title="二、实现步骤"></a>二、实现步骤</h2><p><code>SpeakerDiarization</code> 内部会进行声纹提取，故最初本打算直接使用。翻阅源码发现尽管可以通过 <code>hook</code> 获取 <code>embeddings</code>，但 embeddings 是经过加窗处理的并且会被 SpeakerDiarization 修改，所以采用如下方式。</p>
+<h3 id="1、Create-SpeakerDiarization-pipeline"><a href="#1、Create-SpeakerDiarization-pipeline" class="headerlink" title="1、Create SpeakerDiarization pipeline"></a>1、Create SpeakerDiarization pipeline</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pyannote.audio.pipelines <span class="keyword">import</span> SpeakerDiarization</span><br><span class="line"><span class="keyword">from</span> pyannote.core.annotation <span class="keyword">import</span> Annotation</span><br><span class="line"></span><br><span class="line">AUTH_TOKEN = <span class="string">&quot;your auth token&quot;</span></span><br><span class="line"></span><br><span class="line">pipeline: SpeakerDiarization = Pipeline.from_pretrained(</span><br><span class="line">    <span class="string">&quot;pyannote/speaker-diarization@2.1&quot;</span>, use_auth_token=AUTH_TOKEN, cache_dir=<span class="string">&quot;./models/pyannote&quot;</span>)</span><br><span class="line">output: Annotation = pipeline(wav_file_path)</span><br></pre></td></tr></table></figure>
+
+<h3 id="2、Apply-SpeakerDiarization"><a href="#2、Apply-SpeakerDiarization" class="headerlink" title="2、Apply SpeakerDiarization"></a>2、Apply SpeakerDiarization</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">wav_file_folder = <span class="string">&quot;./audio&quot;</span></span><br><span class="line">wav_file_name = <span class="string">&quot;audio-01.wav&quot;</span></span><br><span class="line">wav_file_path = wav_file_folder + <span class="string">&quot;/&quot;</span> + wav_file_name</span><br><span class="line"></span><br><span class="line">output: Annotation = pipeline(wav_file_path, hook=hook)</span><br><span class="line"></span><br><span class="line">tracks = <span class="built_in">list</span>(output.itertracks())</span><br></pre></td></tr></table></figure>
+
+<h3 id="3、定义相关函数"><a href="#3、定义相关函数" class="headerlink" title="3、定义相关函数"></a>3、定义相关函数</h3><h4 id="加载音频"><a href="#加载音频" class="headerlink" title="加载音频"></a>加载音频</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torch</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_audio</span>(<span class="params">wav_file_path, frame_offset, num_frames</span>):</span><br><span class="line">    signal, sr = torchaudio.load(<span class="built_in">str</span>(wav_file_path),</span><br><span class="line">                                 frame_offset=frame_offset,</span><br><span class="line">                                 num_frames=num_frames,</span><br><span class="line">                                 channels_first=<span class="literal">False</span>)</span><br><span class="line">    <span class="keyword">return</span> signal, sr</span><br></pre></td></tr></table></figure>
+
+<h4 id="提取声纹"><a href="#提取声纹" class="headerlink" title="提取声纹"></a>提取声纹</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> speechbrain.pretrained <span class="keyword">import</span> EncoderClassifier</span><br><span class="line"></span><br><span class="line"><span class="comment"># 直接使用创建好的分类器</span></span><br><span class="line">classifier: EncoderClassifier = pipeline._embedding.classifier_</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">extract_embedding</span>(<span class="params">classifier: EncoderClassifier, signal, sr</span>):</span><br><span class="line">    waveform = classifier.audio_normalizer(signal, sr)</span><br><span class="line">    <span class="comment"># Fake batches:</span></span><br><span class="line">    batch = waveform.unsqueeze(<span class="number">0</span>)</span><br><span class="line">    <span class="comment"># Encode</span></span><br><span class="line">    emb = classifier.encode_batch(batch, normalize=<span class="literal">True</span>)</span><br><span class="line">    <span class="keyword">return</span> emb</span><br></pre></td></tr></table></figure>
+
+<h4 id="生成说话人名称"><a href="#生成说话人名称" class="headerlink" title="生成说话人名称"></a>生成说话人名称</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">speaker_count = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">generate_speaker_name</span>():</span><br><span class="line">    <span class="keyword">global</span> speaker_count</span><br><span class="line">    speaker_count += <span class="number">1</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;发音人_<span class="subst">&#123;speaker_count:02d&#125;</span>&quot;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="Speaker-Verification"><a href="#Speaker-Verification" class="headerlink" title="Speaker Verification"></a>Speaker Verification</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">similarity = torch.nn.CosineSimilarity(dim=-<span class="number">1</span>, eps=<span class="number">1e-6</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">speaker_verification</span>(<span class="params">emb1, em2</span>):</span><br><span class="line">    score = <span class="number">0</span></span><br><span class="line">    score = <span class="built_in">float</span>(similarity(emb1, em2)[<span class="number">0</span>])</span><br><span class="line">    decision = score &gt; EMBENDING_THRESHOLD</span><br><span class="line">    <span class="keyword">return</span> score, decision</span><br></pre></td></tr></table></figure>
+
+<h4 id="Speaker-Identification"><a href="#Speaker-Identification" class="headerlink" title="Speaker Identification"></a>Speaker Identification</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">speaker_identification</span>(<span class="params">emb: torch.Tensor, speakers: <span class="type">Dict</span>, segment: Segment</span>):</span><br><span class="line">    result_decision = <span class="literal">False</span></span><br><span class="line">    result_score = <span class="number">0.0</span></span><br><span class="line">    result_name = <span class="literal">None</span></span><br><span class="line">    <span class="keyword">for</span> name, embedding <span class="keyword">in</span> speakers.items():</span><br><span class="line">        score, decision = speaker_verification(emb, embedding)</span><br><span class="line">        <span class="keyword">if</span> decision:</span><br><span class="line">            result_decision = <span class="literal">True</span></span><br><span class="line">            result_score = score</span><br><span class="line">            result_name = name</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> <span class="keyword">not</span> result_decision:</span><br><span class="line">        result_name = classes()</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 如果不存在则新增，存在则更新。</span></span><br><span class="line">    speakers[result_name] = emb</span><br><span class="line">    <span class="keyword">return</span> result_decision, result_score, result_name</span><br></pre></td></tr></table></figure>
+
+<h3 id="4、分段识别"><a href="#4、分段识别" class="headerlink" title="4、分段识别"></a>4、分段识别</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 音频采样率</span></span><br><span class="line">SAMPLE_RATE = <span class="number">16000</span></span><br><span class="line"><span class="comment"># 提取声纹：使用的音频长度</span></span><br><span class="line">EMBEDDING_DURATION = <span class="number">1.0</span></span><br><span class="line"><span class="comment"># 提取声纹：只使用达到一定长度的音频</span></span><br><span class="line">EMBEDDING_DURATION_THRESHOLD = EMBEDDING_DURATION + <span class="number">0.2</span></span><br><span class="line"><span class="comment"># 提取声纹：读取音频帧数量(torchaaudio)</span></span><br><span class="line">EMBEDDING_NUM_FRAMES = <span class="built_in">int</span>(SAMPLE_RATE * EMBEDDING_DURATION)</span><br><span class="line"><span class="comment"># 提取声纹：验证声纹达标阈值</span></span><br><span class="line">EMBENDING_THRESHOLD = <span class="number">0.25</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">tracks = <span class="built_in">list</span>(output.itertracks())</span><br><span class="line">speakers = &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> idx <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>, <span class="built_in">len</span>(tracks)):</span><br><span class="line">    track, speaker = tracks[idx]</span><br><span class="line">    start = <span class="built_in">max</span>(track.start, tracks[idx - <span class="number">1</span>]</span><br><span class="line">                [<span class="number">0</span>].end) <span class="keyword">if</span> idx != <span class="number">0</span> <span class="keyword">else</span> track.start</span><br><span class="line">    end = <span class="built_in">min</span>(track.end, tracks[idx + <span class="number">1</span>]</span><br><span class="line">              [<span class="number">0</span>].start) <span class="keyword">if</span> idx != <span class="built_in">len</span>(tracks) - <span class="number">1</span> <span class="keyword">else</span> track.end</span><br><span class="line">    segment = Segment(start=start, end=end)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(</span><br><span class="line">        <span class="string">f&quot;<span class="subst">&#123;speaker&#125;</span> <span class="subst">&#123;track&#125;</span> ==&gt;&gt; start=<span class="subst">&#123;start:<span class="number">.3</span>f&#125;</span> stop=<span class="subst">&#123;end:<span class="number">.3</span>f&#125;</span> duration=<span class="subst">&#123;(end - start):<span class="number">.3</span>f&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> segment.duration &lt; EMBEDDING_DURATION_THRESHOLD:</span><br><span class="line">        <span class="comment">#print(f&quot;Ignore: start=&#123;start:.3f&#125; stop=&#123;end:.3f&#125;&quot;)</span></span><br><span class="line">        <span class="keyword">pass</span></span><br><span class="line">    <span class="keyword">else</span>:</span><br><span class="line">        <span class="comment"># 加载音频</span></span><br><span class="line">        frame_offset = <span class="built_in">int</span>(</span><br><span class="line">            (segment.middle - EMBEDDING_DURATION / <span class="number">2</span>) * SAMPLE_RATE)</span><br><span class="line">        signal, sr = load_audio(wav_file_path, frame_offset,</span><br><span class="line">                                EMBEDDING_NUM_FRAMES)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 提取声纹</span></span><br><span class="line">        emb = extract_embedding(classifier, signal, sr)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 说话人辨认</span></span><br><span class="line">        decision, score, name = speaker_identification(emb, speakers, segment)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;segment&#125;</span> <span class="subst">&#123;decision&#125;</span>, <span class="subst">&#123;score:<span class="number">.3</span>f&#125;</span>, <span class="subst">&#123;name&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;说话人数量：<span class="subst">&#123;<span class="built_in">len</span>(speakers)&#125;</span>&quot;</span>)</span><br><span class="line"><span class="keyword">for</span> name, _ <span class="keyword">in</span> speakers.items():</span><br><span class="line">    <span class="built_in">print</span>(name)</span><br></pre></td></tr></table></figure>
+
+<h2 id="三、Know-issues"><a href="#三、Know-issues" class="headerlink" title="三、Know issues"></a>三、Know issues</h2><p>pyannote.audio 和 <code>SpeechBrain</code> 提供的预训练模型是基于英文数据集训练的，目前没有发现有开源的中文模型，故处理中文的 <code>EER</code> 欠佳。</p>
+<p>通过加窗、为每个说话人保留多个声纹等对识别率有一定的提升但有限。</p>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><h3 id="pyannote-audio-简介"><a href="#pyannote-audio-简介" class="headerlink" title="pyannote.audio 简介"></a>pyannote.audio 简介</h3><p><code>pyannote.audio</code> 是一个基于 Python 的开源音频处理工具包，它提供了一组用于音频分析、处理、识别和分类的模块。它基于深度学习和机器学习技术，可以用于语音信号处理、说话人识别、语音转录、声音事件检测等领域的应用。</p>
+<p>该工具包的核心是一个基于深度学习的音频分析框架，可以对音频数据进行处理和建模，并进行说话人识别、语音转录、声音事件检测等任务。此外，<code>pyannote.audio</code> 还提供了许多实用工具和函数，如音频读取、处理、可视化等，可以方便地进行音频数据的处理和分析。</p>
+<p>该工具包的优点是易于使用，提供了丰富的文档和示例，并且是一个开源工具包，可以方便地进行定制和扩展。</p>
+<p><code>pyannote.audio</code> 比较基础的功能是 <code>segmentation</code>，能够将语音进行加窗处理。在此基础上，可以进行如下任务：</p>
+<ol>
+<li><p>Voice activity detection(VAD), 语音活动检测。用于识别输入信号中是否存在语音(即人声)活动。pyannote.audio 能输出相应的时间戳。</p>
+</li>
+<li><p>Overlapped speech detection, 重叠语音检测。重叠语音是指两个或多个说话者同时讲话的情况。pyannote.audio 能输出相应的时间戳。</p>
+</li>
+<li><p>Speaker counting, 说话人计数。统计一段音频中有不同时刻有几人在说话。pyannote.audio 能输出相应的时间戳。</p>
+</li>
+<li><p>Speaker change detection, 说话人改变检测。检测一段音频中多人说话在哪个时间点发生了切换。pyannote.audio 能输出相应的时间戳。</p>
+</li>
+<li><p>Speaker Verification, 说话人验证。确定一个人是否是一个给定说话人。但是，pyannote.audio 只是获取声纹而已。需要配合其他代码进行验证。获取声纹可以使用 <a target="_blank" rel="noopener" href="https://huggingface.co/pyannote/embedding">pyannote&#x2F;embedding</a> 或 <a target="_blank" rel="noopener" href="https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb">speechbrain&#x2F;spkrec-ecapa-voxceleb</a> 。</p>
+</li>
+<li><p>Speaker Diarization, 说话人分离。pyannote.audio 能分离出一条音频中每个人说话的时间段。如果处理多条音频，比如多条音频里都有”张三”，Speaker Diarization 并不知道是同一个人——这需要 Speaker Identification。</p>
+</li>
+</ol>
+<h3 id="SpeechBrain-简介"><a href="#SpeechBrain-简介" class="headerlink" title="SpeechBrain 简介"></a>SpeechBrain 简介</h3><p>pyannote.audio 官方示例默认使用 SpeechBrain 提取声纹和验证。前者对后者进行了封装。下面是一段简单的、直接使用 SpeechBrain 的代码。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> torchaudio</span><br><span class="line"><span class="keyword">from</span> speechbrain.pretrained <span class="keyword">import</span> SpeakerRecognition, EncoderClassifier</span><br><span class="line"></span><br><span class="line">AUTH_TOKEN = <span class="string">&quot;your auth token&quot;</span></span><br><span class="line"></span><br><span class="line">classifier = EncoderClassifier.from_hparams(</span><br><span class="line">    source=<span class="string">&quot;speechbrain/spkrec-ecapa-voxceleb&quot;</span>,</span><br><span class="line">    savedir=<span class="string">&quot;./models/speechbrain/spkrec-ecapa-voxceleb&quot;</span>,</span><br><span class="line">    use_auth_token=AUTH_TOKEN)</span><br><span class="line"></span><br><span class="line">signal, fs = torchaudio.load(<span class="string">&#x27;./audio/audio-03.wav&#x27;</span>)</span><br><span class="line">embeddings = classifier.encode_batch(signal, normalize=<span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(embeddings.shape)</span><br><span class="line"><span class="built_in">print</span>(embeddings)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">verification = SpeakerRecognition.from_hparams(</span><br><span class="line">    source=<span class="string">&quot;speechbrain/spkrec-ecapa-voxceleb&quot;</span>,</span><br><span class="line">    savedir=<span class="string">&quot;./models/speechbrain/spkrec-ecapa-voxceleb&quot;</span>,</span><br><span class="line">    use_auth_token=AUTH_TOKEN)</span><br><span class="line"></span><br><span class="line">score, prediction = verification.verify_files(</span><br><span class="line">    <span class="string">&#x27;./audio/audio-03.wav&#x27;</span>, <span class="string">&#x27;./audio/audio-04.wav&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(score, prediction)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Speaker-Verification、Speaker-Diarization-和-Speaker-Identification-的区别"><a href="#Speaker-Verification、Speaker-Diarization-和-Speaker-Identification-的区别" class="headerlink" title="Speaker Verification、Speaker Diarization 和 Speaker Identification 的区别"></a>Speaker Verification、Speaker Diarization 和 Speaker Identification 的区别</h3><p><code>Speaker Verification</code>、<code>Speaker Identification</code> 和 <code>Speaker Diarization</code> 都是与说话人相关的语音处理任务，但它们的目标和方法略有不同。</p>
+<ul>
+<li><p><code>Speaker Verification</code>（说话人验证）：是确定一个人是否是一个给定说话人的任务。这个任务通常涉及到两个步骤：注册和验证。在注册阶段，系统会录制目标说话人的语音作为该人的声纹模板；在验证阶段，系统会接收一个声音样本，并尝试确定该声音样本是否与给定说话人的声纹模板匹配。<code>Speaker Verification</code> 的应用包括语音门禁系统和电话银行验证系统等。</p>
+</li>
+<li><p><code>Speaker Identification</code>（说话人识别）：是从一个包含多个说话人的语音信号中自动识别出每个说话人的任务。这个任务通常涉及到两个步骤：说话人特征提取和说话人分类。在特征提取阶段，系统会将每个说话人的声纹特征提取出来，通常使用的特征包括梅尔频率倒谱系数（MFCC）和高斯混合模型（GMM）。在分类阶段，系统会使用训练好的分类器来确定每个声音段所属的说话人。<code>Speaker Identification</code> 的应用包括犯罪调查和语音检索等。</p>
+</li>
+<li><p><code>Speaker Diarization</code>（说话人分割聚类、说话人分离&#x2F;日志）：是从多个说话人混合的语音信号中自动分离出不同的说话人的任务。这个任务通常涉及到两个步骤：语音段切分和说话人聚类。在语音段切分阶段，系统会将语音信号切分成独立的语音段，每个语音段通常只包含一个说话人。在聚类阶段，系统会尝试将同一个说话人的所有语音段聚合到一起，以便进行后续的分析和处理。<code>Speaker Diarization</code> 的应用包括电话会议记录和语音翻译等。</p>
+</li>
+</ul>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://github.com/pyannote/pyannote-audio">pyannote.audio</a><br><a target="_blank" rel="noopener" href="https://speechbrain.github.io/">SpeechBrain</a><br><a target="_blank" rel="noopener" href="https://book.douban.com/subject/35217627/">声纹技术：从核心算法到工程实践</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Audio/" rel="tag"># Audio</a>
+              <a href="/tags/Speech/" rel="tag"># Speech</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/12/04/data-structure-an-implement-of-bounded-queue/" rel="prev" title="一种有界队列（Bounded Buffer）的实现">
+      <i class="fa fa-chevron-left"></i> 一种有界队列（Bounded Buffer）的实现
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/05/13/Patch-In-ASP-NET-Core-Web-API/" rel="next" title="在 ASP.NET Core Web API 中处理 Patch 请求">
+      在 ASP.NET Core Web API 中处理 Patch 请求 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%AE%9E%E7%8E%B0%E6%AD%A5%E9%AA%A4"><span class="nav-number">2.</span> <span class="nav-text">二、实现步骤</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81Create-SpeakerDiarization-pipeline"><span class="nav-number">2.1.</span> <span class="nav-text">1、Create SpeakerDiarization pipeline</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81Apply-SpeakerDiarization"><span class="nav-number">2.2.</span> <span class="nav-text">2、Apply SpeakerDiarization</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3%E3%80%81%E5%AE%9A%E4%B9%89%E7%9B%B8%E5%85%B3%E5%87%BD%E6%95%B0"><span class="nav-number">2.3.</span> <span class="nav-text">3、定义相关函数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E9%9F%B3%E9%A2%91"><span class="nav-number">2.3.1.</span> <span class="nav-text">加载音频</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8F%90%E5%8F%96%E5%A3%B0%E7%BA%B9"><span class="nav-number">2.3.2.</span> <span class="nav-text">提取声纹</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E8%AF%B4%E8%AF%9D%E4%BA%BA%E5%90%8D%E7%A7%B0"><span class="nav-number">2.3.3.</span> <span class="nav-text">生成说话人名称</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Speaker-Verification"><span class="nav-number">2.3.4.</span> <span class="nav-text">Speaker Verification</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Speaker-Identification"><span class="nav-number">2.3.5.</span> <span class="nav-text">Speaker Identification</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4%E3%80%81%E5%88%86%E6%AE%B5%E8%AF%86%E5%88%AB"><span class="nav-number">2.4.</span> <span class="nav-text">4、分段识别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81Know-issues"><span class="nav-number">3.</span> <span class="nav-text">三、Know issues</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95"><span class="nav-number">4.</span> <span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pyannote-audio-%E7%AE%80%E4%BB%8B"><span class="nav-number">4.1.</span> <span class="nav-text">pyannote.audio 简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SpeechBrain-%E7%AE%80%E4%BB%8B"><span class="nav-number">4.2.</span> <span class="nav-text">SpeechBrain 简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Speaker-Verification%E3%80%81Speaker-Diarization-%E5%92%8C-Speaker-Identification-%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">4.3.</span> <span class="nav-text">Speaker Verification、Speaker Diarization 和 Speaker Identification 的区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">5.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alby"
+      src="/images/avatar200x200.png">
+  <p class="site-author-name" itemprop="name">Alby</p>
+  <div class="site-description" itemprop="description">Catch.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">50</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/albyho" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;albyho" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alby Email: echo "YWxieUBmb3htYWlsLmNvbQo=" | base64 -D</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>

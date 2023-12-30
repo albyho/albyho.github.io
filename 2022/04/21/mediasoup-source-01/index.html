@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.0.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.tubumu.com","root":"/","scheme":"Mist","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="一、概述Mediasoup 主要提供了 3 个库和 1 个 demo。    库名 说明    mediasoup 主要包含三部分。一是 worker 可执行程序，由 C++ 实现，是本系列分析的重点；二是 Node 库，由 TypeScript 实现；三是 Rust 库，和 Node 的主要不同在于它没有以进程方式而是以静态库方式使用 mediasoup-worker。   mediasoup-">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mediasoup 3.9.10 worker 源码初步梳理">
+<meta property="og:url" content="http://blog.tubumu.com/2022/04/21/mediasoup-source-01/index.html">
+<meta property="og:site_name" content="Alby&#39;s blog">
+<meta property="og:description" content="一、概述Mediasoup 主要提供了 3 个库和 1 个 demo。    库名 说明    mediasoup 主要包含三部分。一是 worker 可执行程序，由 C++ 实现，是本系列分析的重点；二是 Node 库，由 TypeScript 实现；三是 Rust 库，和 Node 的主要不同在于它没有以进程方式而是以静态库方式使用 mediasoup-worker。   mediasoup-">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-04-21T02:54:43.000Z">
+<meta property="article:modified_time" content="2022-04-22T13:13:29.142Z">
+<meta property="article:author" content="Alby">
+<meta property="article:tag" content="Mediasoup">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://blog.tubumu.com/2022/04/21/mediasoup-source-01/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>mediasoup 3.9.10 worker 源码初步梳理 | Alby's blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Alby's blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">世上没有巧合，只有巧合的假象。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/albyho" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2022/04/21/mediasoup-source-01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          mediasoup 3.9.10 worker 源码初步梳理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-21 10:54:43" itemprop="dateCreated datePublished" datetime="2022-04-21T10:54:43+08:00">2022-04-21</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-22 21:13:29" itemprop="dateModified" datetime="2022-04-22T21:13:29+08:00">2022-04-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Mediasoup/" itemprop="url" rel="index"><span itemprop="name">Mediasoup</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p><code>Mediasoup</code> 主要提供了 3 个库和 1 个 demo。</p>
+<table>
+<thead>
+<tr>
+<th>库名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/versatica/mediasoup">mediasoup</a></td>
+<td>主要包含三部分。一是 worker 可执行程序，由 C++ 实现，是本系列分析的重点；二是 Node 库，由 TypeScript 实现；三是 Rust 库，和 Node 的主要不同在于它没有以进程方式而是以静态库方式使用 mediasoup-worker。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/versatica/mediasoup-client">mediasoup-client</a></td>
+<td>Web 客户端库。TypeScript 实现。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/versatica/libmediasoupclient">libmediasoupclient</a></td>
+<td>Native 客户端库。C++ 实现。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/versatica/mediasoup-demo">mediasoup-demo</a></td>
+<td>官方 Demo。</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://mediasoup.org/documentation/examples/">Examples</a></td>
+<td>各种示例。</td>
+</tr>
+</tbody></table>
+<p>网络上对 mediasoup 的 <code>Node.js</code> 层——准确说是对官方的 <code>mediasoup-demo</code> 的源码分析比较多，对于 <code>mediasoup-client</code> 和 <code>mediasoup-worker</code> (之后简 worker) 等的源码详细分析相对较少。本人之前有将 <code>GB28281</code> 集成进 mediasoup 的想法并验证了可行性，以及使用 <code>.Net</code> 重新实现过 Node.js 层（含 mediasoup-client 和 mediasoup-demo），对 worker 的源码进行过比较粗略地浏览。最近基于想要弥补一些比较模糊的认知，并且 mediaoup 本身也在进化，故就再做了一次源码的梳理。</p>
+<blockquote>
+<p>至于 mediasoup 是什么、能做什么、与其他 SFU 相较而言的优缺点、Demo 如何运行、为什么不用单一语言来实现等等讨论不是本系列关注的重点。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="二、名词-概念"><a href="#二、名词-概念" class="headerlink" title="二、名词&#x2F;概念"></a>二、名词&#x2F;概念</h2><p>mediasoup 定义和抽象了一些名词和概念，为了方便描述，做整理如下表：</p>
+<table>
+<thead>
+<tr>
+<th>名词&#x2F;概念</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Settings</td>
+<td>设置。用于读取命令行配置、将配置输出到日志，以及运行时更新配置。另外用 <code>线程本地存储</code> 保存配置以确保每个线程都有一个 Settings 配置对象。当然，以 worker 进程方式运行不存在这个问题。设置的选项（option: getopt.h）具体包括：<code>logLevel</code>、<code>logTags</code>、<code>rtcMinPort</code> 和 <code>rtcMaxPort</code>、<code>dtlsCertificateFile</code> 和 <code>dtlsPrivateKeyFile</code> 这六项，分别表示日志等级、日志标签（如ice、dtls等，控制哪些类的日志才会传出）、最小和最大 rtc 端口，以及 dtls 证书文件和私钥的物理路径。这些参数都是可选的，如果未提供则会使用默认值或自动生成。</td>
+</tr>
+<tr>
+<td>Logger</td>
+<td>日志。有 <code>debug</code>、<code>warn</code>、<code>error</code> 和 <code>none</code> 四个等级。日志通过 <code>ChannelSocket</code> 传输到父进程，如果 ChannelSocket 尚未创建则会在标准输出中打印日志。mediasoup 给很多方法都加了 Trace 日志，打开 <code>MS_LOG_TRACE</code> 编译宏开关并且设置日志等级为 debug 则会输出。类似于 Settings，Logger 也用线程本地存储保存 Buffer 和 ChannelSocket 以确保每个线程都有一个对象。</td>
+</tr>
+<tr>
+<td>ChannelSocket</td>
+<td>通道 Socket。抽象了 worker 进程和父进程的通信。得益于 <code>libuv</code>，对于进程间通信开发者不用关心操作系统是用的 Linux&#x2F;UNIX 的 <code>UNIX Domain Socket</code> 还是 Windows 的 <code>IPC</code> 等。而 mediasoup 的这层 ChannelSocket 抽象，也为后来支持的 <code>以库的方式使用 worker</code> 打下基础。ChannelSocket 是双向的，主要向父进程传输日志；接受父进程的如创建 <code>Transport</code>、<code>Producer</code> 等指令请求；向父进程传输指令请求的执行结果；向父进程传输 Producer 暂停关闭、SCTP 发送 Buffer 已满之类的通知。所有消息都是基于文本的。</td>
+</tr>
+<tr>
+<td>PayloadChannelSocket</td>
+<td>负载通道 Socket。类似于 ChannelSocket，不同的是 PayloadChannelSocket 用于 <code>DirectTransport</code> 向父进程发送 RTP 或 RTCP 数据包等。消息是基于文本和二进制的。</td>
+</tr>
+<tr>
+<td>Worker</td>
+<td>工作者。注意这里并非指 worker 进程，但某种意义下可以指代 worker 进程。ChannelSocket 和 PayloadChannelSocket 只负责消息的接收和发送，而 Worker 是具体消息的处理入口。它根据消息的类别进行处理，对于自身可以负责的请求比如获取资源使用率、创建及关闭 <code>Router</code>、dump 获取本 Worker 下的 Router 的 Id 集合等则直接处理，其余的就交给 Router 来处理。遵循谁创建谁销毁的原则，Router 的销毁工作也由 Worker 负责。</td>
+</tr>
+<tr>
+<td>Router</td>
+<td>路由。Router 是比较重要的概念，不准确地说可以将 Router 和房间对应起来。其保存了 Transport、Producer、<code>Consumer</code>、Producer下对应的 Consumer 以及 <code>DataProducer</code> 和 <code>DataConsumer</code> 相关的集合。如上文所述，Worker 将其处理不了的工作交给 Router，Router 能够处创建和关闭 Transport 以及和 <code>RtpObserver</code> 相关的几个操作请求，其余的就交给 Transport 处理。另外，Router 只负责 Transport 和 RtpObserver 的销毁工作，对于 Producer、Consumer 等则由创建这些对象的 Transport 负责。</td>
+</tr>
+<tr>
+<td>Transport</td>
+<td>传输通道。Transport 是抽象类，具体类包括：<code>WebRtcTransport</code>、<code>PlainTransport</code>、<code>DirectTransport</code> 和 <code>PipeTransport</code>。</td>
+</tr>
+<tr>
+<td>WebRtcTransport</td>
+<td>WebRtc 传输通道。WebRtcTransport 包含 Socket 服务端，将接收到的数据包尝试转换为 <code>StunPacket</code>、<code>Rtcp Packet</code>、<code>RtpPacket</code> 或 <code>Dtls 数据</code> 中的一种。StunPacket 由 IceServer 处理，Rtcp Packet 会经过处理后发送给 Consumer, RtpPacket 由相应的 Producer 处理，Dtls 数据当然是先解密再处理；也会通过 Sokcet 将数据发送到本 Transport 下对应的 Consumer 中去。</td>
+</tr>
+<tr>
+<td>PlainTransport</td>
+<td>Plain 传输通道。类似于 WebRtcTransport，不同的是不会收到 StunPacket 。</td>
+</tr>
+<tr>
+<td>PipeTransport</td>
+<td>Pipe 传输通道。用于跨 Router&#x2F;worker Rtp 包传输。</td>
+</tr>
+<tr>
+<td>DirectTransport</td>
+<td>Direct 传输通道。DirectTransport 不包含 Socket 服务端，将接收到的数据直接通过 PayloadChannel 发送给 Consumer。</td>
+</tr>
+<tr>
+<td>Producer</td>
+<td>生产者。类型有四类：SIMPLE、SIMULCAST、SVC 和 PIPE。</td>
+</tr>
+<tr>
+<td>Consumer</td>
+<td>消费者。Consumer 是抽象类，具体类包括：<code>SimpleConsumer</code>、<code>SimulcastConsumer</code>、<code>SvcConsumer</code> 和 <code>PipeConsumer</code>。如果是 PipeTranspor 进行消费，则 type 为 “pipe”，否则为 Producer 的 type。</td>
+</tr>
+<tr>
+<td>SimpleConsumer</td>
+<td>单体消费者。</td>
+</tr>
+<tr>
+<td>SimulcastConsumer</td>
+<td>Simulcast 消费者。</td>
+</tr>
+<tr>
+<td>SvcConsumer</td>
+<td>Svc 消费者。</td>
+</tr>
+<tr>
+<td>PipeConsumer</td>
+<td>Pipe 消费者。</td>
+</tr>
+<tr>
+<td>DataProducer</td>
+<td>Data 生产者。类型有两类：SCTP 和 DIRECT。只有传递 enableSctp 为 true 的参数才能创建类型为 SCTP 的 DataProducer；只能在 DirectTransport 之上创建类型为 DIRECT 的 DataProducer。</td>
+</tr>
+<tr>
+<td>DataConsumer</td>
+<td>Data 消费者。只有传递 enableSctp 为 true 的参数才能创建类型为 SCTP 的 DataProducer；只能在 DirectTransport 之上创建类型为 DIRECT 的 DataConsumer。</td>
+</tr>
+<tr>
+<td>RtpObserver</td>
+<td>Rtp 观察者。RtpObserver 是抽象类，具体类包括：<code>AudioLevelObserver</code> 和 <code>ActiveSpeakerObserver</code>。</td>
+</tr>
+<tr>
+<td>AudioLevelObserver</td>
+<td>音量观察者。收到音频 Rtp 包后累计音量。比如每1秒间隔计算触发一次计算，如果对应 Producer 收集了 10 个及以上的包则计算音频的平均值，如果值大于默认 -80dB 则将 Producder 的 Id 收集起来，最多收集指定参数 <code>maxEntries</code> 那么多个。如果存在符合条件的 Producer 则发出 <code>volumes</code> 事件，否则发出 <code>silence</code> 事件。事件会发送给父进程，而父进程会发送给相应的客户端。</td>
+</tr>
+<tr>
+<td>ActiveSpeakerObserver</td>
+<td>说话人观察者。ActiveSpeakerObserver 是 3.8.0 新增的。具体算法不算太简单，大致看并不是谁说话就算，而是计算出会议中说话人中谁是主导者。如果存在符合条件的唯一 Producer 则发出 <code>dominantspeaker</code> 事件。事件会发送给父进程，而父进程会发送给相应的客户端。</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>父对象通常会监听子对象的相关事件，比如 Worker 会监听 ChannelSocket 和 PayloadChannelSocket 的相关事件(Router没有监听器)，Router 会监听 Transport 的相关事件， Transport 会监听 Producer 、 Consumer 等的相关事件。<br>如果要扩展其他协议，比如支持 GB28181 的 PS 流，可以创建自定义 Transport 。<br>如果要集成一些 AI 功能，比如目标识别，手势识别，语音指令识别等，可以创建自定义 RtpObserver 。</p>
+</blockquote>
+<h2 id="三、ChannelSocket-消息类型"><a href="#三、ChannelSocket-消息类型" class="headerlink" title="三、ChannelSocket 消息类型"></a>三、ChannelSocket 消息类型</h2><p><code>ChannelRequest::MethodId</code> 枚举定义了各种消息。其命名有一定规律，除 <code>*.close</code> 和 <code>RtpObServer</code> 相关的消息外，第一个下划线前的第一个单词通常标明了消息由谁来处理。比如 <code>TRANSPORT_PRODUCE</code>，表示 Transport 需要处理 Produce 消息。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// File: worker/src/Channel/ChannelRequest.cpp</span></span><br><span class="line">absl::flat_hash_map&lt;std::string, ChannelRequest::MethodId&gt; ChannelRequest::string2MethodId =</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// 关闭 Worker 。通常发生在 worker 进程被关闭时，由 Worker 的析构函数触发。</span></span><br><span class="line">    &#123; <span class="string">&quot;worker.close&quot;</span>,                                ChannelRequest::MethodId::WORKER_CLOSE                                     &#125;,</span><br><span class="line">    <span class="comment">// 获取 Worker 转储。返回值包含 worker 进程 Id 和本 Worker 下的 Router 的 routerIds 集合。</span></span><br><span class="line">    &#123; <span class="string">&quot;worker.dump&quot;</span>,                                 ChannelRequest::MethodId::WORKER_DUMP                                      &#125;,</span><br><span class="line">    <span class="comment">// 获取 Worker 资源使用率。结构见 http://docs.libuv.org/en/v1.x/misc.html#c.uv_rusage_t 或 mediasoup-client 库。</span></span><br><span class="line">    &#123; <span class="string">&quot;worker.getResourceUsage&quot;</span>,                     ChannelRequest::MethodId::WORKER_GET_RESOURCE_USAGE                        &#125;,</span><br><span class="line">    <span class="comment">// 更新设置。具体是更新日志等级(logLevel)和日志标签(logTags)。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;worker.updateSettings&quot;</span>,                       ChannelRequest::MethodId::WORKER_UPDATE_SETTINGS                           &#125;,</span><br><span class="line">    <span class="comment">// 创建 Router。请求参数的 routerId 有调用方提供。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;worker.createRouter&quot;</span>,                         ChannelRequest::MethodId::WORKER_CREATE_ROUTER                             &#125;,</span><br><span class="line">    <span class="comment">// 关闭 Router。该消息由 Worker 处理。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.close&quot;</span>,                                ChannelRequest::MethodId::ROUTER_CLOSE                                     &#125;,</span><br><span class="line">    <span class="comment">// 获取 Router 转储。返回值包含本 Router 的 id、transportIds、rtpObserverIds、mapProducerIdConsumerIds、mapConsumerIdProducerId、mapProducerIdObserverIds、mapDataProducerIdDataConsumerIds 和 mapDataConsumerIdDataProducerId。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.dump&quot;</span>,                                 ChannelRequest::MethodId::ROUTER_DUMP                                      &#125;,</span><br><span class="line">    <span class="comment">// 创建 WebRtcTransport。请求参数主要主要有监听 IP 和 Port（旧版可能无法指定端口而只能使用允许范围内的随机端口）；是否启用 UDP 和(或) TCP；是否首选 UDP 和(或) TCP。返回值包含客户端创建 Transport 所需参数，暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.createWebRtcTransport&quot;</span>,                ChannelRequest::MethodId::ROUTER_CREATE_WEBRTC_TRANSPORT                   &#125;,</span><br><span class="line">    <span class="comment">// 创建 PlainTransport。请求参数类似有创建 WebRtcTransport，但无需指定使用 UDP 还是 TCP，因为只支持 UDP。额外的 comedia 表示是否需要预先连接 Transport；rtcpMux 表示是否 RTCP 复用 RTP 端口；enableSrtp 表示是否使用 Srtp，true 则需要提供 srtpCryptoSuite 参数。返回值包含客户端创建 Transport 所需参数，暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.createPlainTransport&quot;</span>,                 ChannelRequest::MethodId::ROUTER_CREATE_PLAIN_TRANSPORT                    &#125;,</span><br><span class="line">    <span class="comment">// 创建 PipeTransport。请求参数类似有创建 WebRtcTransport，但无需指定使用 UDP 还是 TCP，因为只支持 UDP。额外的 enableRtx 是否启用 Rtx 重传。返回值包含打通管道所需参数，暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.createPipeTransport&quot;</span>,                  ChannelRequest::MethodId::ROUTER_CREATE_PIPE_TRANSPORT                     &#125;,</span><br><span class="line">    <span class="comment">// 创建 DirectTransport。请求参数不能将 enableSctp 设置为 true，因为没必要。也无需提供监听 IP 和 Port 等信息。返回值包含直连需参数，暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.createDirectTransport&quot;</span>,                ChannelRequest::MethodId::ROUTER_CREATE_DIRECT_TRANSPORT                   &#125;,</span><br><span class="line">    <span class="comment">// 创建 ActiveSpeakerObserver。 请求参数必须提供 interval 。返回会议中发言人的音量。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.createActiveSpeakerObserver&quot;</span>,          ChannelRequest::MethodId::ROUTER_CREATE_ACTIVE_SPEAKER_OBSERVER            &#125;,</span><br><span class="line">    <span class="comment">// 创建 AudioLevelObserver。请求参数必须提供 interval，maxEntries 和 threshold 。返回会议中唯一主导说话者。</span></span><br><span class="line">    &#123; <span class="string">&quot;router.createAudioLevelObserver&quot;</span>,             ChannelRequest::MethodId::ROUTER_CREATE_AUDIO_LEVEL_OBSERVER               &#125;,</span><br><span class="line">    <span class="comment">// 关闭 Transport。该消息由 Router 处理。Transport 的关闭会触发连锁反应，以确保其上的 Consumer、Producer，其他人消费本 Transport 上的 Producer 的 Consumer(有点绕) 得以关闭。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.close&quot;</span>,                             ChannelRequest::MethodId::TRANSPORT_CLOSE                                  &#125;,</span><br><span class="line">    <span class="comment">// 获取 Transport 转储。返回值包含本 Transport 的 Id、是否是 DirectTransport 的 direct 等。更多返回参数详见：Transport.cpp 的 void Transport::FillJson(json&amp; jsonObject) const 方法。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.dump&quot;</span>,                              ChannelRequest::MethodId::TRANSPORT_DUMP                                   &#125;,</span><br><span class="line">    <span class="comment">// 获取 Transport 的状态值。返回值见：Transport.cpp 的 void Transport::FillJsonStats(json&amp; jsonArray) 方法。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.getStats&quot;</span>,                          ChannelRequest::MethodId::TRANSPORT_GET_STATS                              &#125;,</span><br><span class="line">    <span class="comment">// 连接 Transport。DirectTransport 不会发送该请求，创建 PipeTransport 时如果参数 comedia 为 true 也无需发送该请求。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.connect&quot;</span>,                           ChannelRequest::MethodId::TRANSPORT_CONNECT                                &#125;,</span><br><span class="line">    <span class="comment">// 设置最大传入码率。用于拥塞控制。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.setMaxIncomingBitrate&quot;</span>,             ChannelRequest::MethodId::TRANSPORT_SET_MAX_INCOMING_BITRATE               &#125;,</span><br><span class="line">    <span class="comment">// 设置最大传出码率。用于拥塞控制。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.setMaxOutgoingBitrate&quot;</span>,             ChannelRequest::MethodId::TRANSPORT_SET_MAX_OUTGOING_BITRATE               &#125;,</span><br><span class="line">    <span class="comment">// 重启 ICE。 仅 WebRtcTransport 会发送该请求。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.restartIce&quot;</span>,                        ChannelRequest::MethodId::TRANSPORT_RESTART_ICE                            &#125;,</span><br><span class="line">    <span class="comment">// 创建 Producer。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.produce&quot;</span>,                           ChannelRequest::MethodId::TRANSPORT_PRODUCE                                &#125;,</span><br><span class="line">    <span class="comment">// 创建 Consumer。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.consume&quot;</span>,                           ChannelRequest::MethodId::TRANSPORT_CONSUME                                &#125;,</span><br><span class="line">    <span class="comment">// 创建 DataProducer。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.produceData&quot;</span>,                       ChannelRequest::MethodId::TRANSPORT_PRODUCE_DATA                           &#125;,</span><br><span class="line">    <span class="comment">// 创建 DataConsumer。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.consumeData&quot;</span>,                       ChannelRequest::MethodId::TRANSPORT_CONSUME_DATA                           &#125;,</span><br><span class="line">    <span class="comment">// 启用 Transport 的跟踪事件。可选事件包括：probation 和 bwe。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;transport.enableTraceEvent&quot;</span>,                  ChannelRequest::MethodId::TRANSPORT_ENABLE_TRACE_EVENT                     &#125;,</span><br><span class="line">    <span class="comment">// 关闭 Producer。该消息由 Transport 处理。Producer 的关闭会触发连锁反应，以确消费本 Producer 的 Consumer 和监听本 Producer 的 RtpObserver 得以关闭。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;producer.close&quot;</span>,                              ChannelRequest::MethodId::PRODUCER_CLOSE                                   &#125;,</span><br><span class="line">    <span class="comment">// 获取 Producer 转储。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;producer.dump&quot;</span>,                               ChannelRequest::MethodId::PRODUCER_DUMP                                    &#125;,</span><br><span class="line">    <span class="comment">// 获取 Producer 状态。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;producer.getStats&quot;</span>,                           ChannelRequest::MethodId::PRODUCER_GET_STATS                               &#125;,</span><br><span class="line">    <span class="comment">// 暂停 Producer 的生产。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;producer.pause&quot;</span>,                              ChannelRequest::MethodId::PRODUCER_PAUSE                                   &#125;,</span><br><span class="line">    <span class="comment">// 恢复 Producer 的生产。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;producer.resume&quot;</span> ,                            ChannelRequest::MethodId::PRODUCER_RESUME                                  &#125;,</span><br><span class="line">    <span class="comment">// 启用 Producer 的跟踪事件。可选事件包括：rtp、keyframe、nack、pli 和 fir。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;producer.enableTraceEvent&quot;</span>,                   ChannelRequest::MethodId::PRODUCER_ENABLE_TRACE_EVENT                      &#125;,</span><br><span class="line">    <span class="comment">// 关闭 Consumer。该消息由 Transport 处理。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.close&quot;</span>,                              ChannelRequest::MethodId::CONSUMER_CLOSE                                   &#125;,</span><br><span class="line">    <span class="comment">// 获取 Consumer 转储。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.dump&quot;</span>,                               ChannelRequest::MethodId::CONSUMER_DUMP                                    &#125;,</span><br><span class="line">    <span class="comment">// 获取 Consumer 状态。返回值暂略。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.getStats&quot;</span>,                           ChannelRequest::MethodId::CONSUMER_GET_STATS                               &#125;,</span><br><span class="line">    <span class="comment">// 暂停 Consumer 的消费。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.pause&quot;</span>,                              ChannelRequest::MethodId::CONSUMER_PAUSE                                   &#125;,</span><br><span class="line">    <span class="comment">// 暂停 Consumer 的消费。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.resume&quot;</span>,                             ChannelRequest::MethodId::CONSUMER_RESUME                                  &#125;,</span><br><span class="line">    <span class="comment">// 设置 Consumer 的首选 Layers。仅对 SimulcastConsumer 和 SvcConsumer 有效。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.setPreferredLayers&quot;</span>,                 ChannelRequest::MethodId::CONSUMER_SET_PREFERRED_LAYERS                    &#125;,</span><br><span class="line">    <span class="comment">// 设置 Consumer 的码率优先级。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.setPriority&quot;</span>,                        ChannelRequest::MethodId::CONSUMER_SET_PRIORITY                            &#125;,</span><br><span class="line">    <span class="comment">// Consumer 请求关键帧。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.requestKeyFrame&quot;</span>,                    ChannelRequest::MethodId::CONSUMER_REQUEST_KEY_FRAME                       &#125;,</span><br><span class="line">    <span class="comment">// 启用 Consumer 的跟踪事件。可选事件包括：rtp、keyframe、nack、pli 和 fir。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;consumer.enableTraceEvent&quot;</span>,                   ChannelRequest::MethodId::CONSUMER_ENABLE_TRACE_EVENT                      &#125;,</span><br><span class="line">    <span class="comment">// 如下 DataProducer 和 DataProducer 的请求类似于 Producer 和 Consumer </span></span><br><span class="line">    &#123; <span class="string">&quot;dataProducer.close&quot;</span>,                          ChannelRequest::MethodId::DATA_PRODUCER_CLOSE                              &#125;,</span><br><span class="line">    &#123; <span class="string">&quot;dataProducer.dump&quot;</span>,                           ChannelRequest::MethodId::DATA_PRODUCER_DUMP                               &#125;,</span><br><span class="line">    &#123; <span class="string">&quot;dataProducer.getStats&quot;</span>,                       ChannelRequest::MethodId::DATA_PRODUCER_GET_STATS                          &#125;,</span><br><span class="line">    &#123; <span class="string">&quot;dataConsumer.close&quot;</span>,                          ChannelRequest::MethodId::DATA_CONSUMER_CLOSE                              &#125;,</span><br><span class="line">    &#123; <span class="string">&quot;dataConsumer.dump&quot;</span>,                           ChannelRequest::MethodId::DATA_CONSUMER_DUMP                               &#125;,</span><br><span class="line">    &#123; <span class="string">&quot;dataConsumer.getStats&quot;</span>,                       ChannelRequest::MethodId::DATA_CONSUMER_GET_STATS                          &#125;,</span><br><span class="line">    <span class="comment">// 获取尚未发出的 Sctp buffer 数量。</span></span><br><span class="line">    &#123; <span class="string">&quot;dataConsumer.getBufferedAmount&quot;</span>,              ChannelRequest::MethodId::DATA_CONSUMER_GET_BUFFERED_AMOUNT                &#125;,</span><br><span class="line">    <span class="comment">// 降低 Sctp buffer 阈值。</span></span><br><span class="line">    &#123; <span class="string">&quot;dataConsumer.setBufferedAmountLowThreshold&quot;</span>,  ChannelRequest::MethodId::DATA_CONSUMER_SET_BUFFERED_AMOUNT_LOW_THRESHOLD  &#125;,</span><br><span class="line">    <span class="comment">// 关闭 RtpObserver。该消息由 Router 处理。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;rtpObserver.close&quot;</span>,                           ChannelRequest::MethodId::RTP_OBSERVER_CLOSE                               &#125;,</span><br><span class="line">    <span class="comment">// 暂停 RtpObserver 的监听。该消息由 Router 处理。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;rtpObserver.pause&quot;</span>,                           ChannelRequest::MethodId::RTP_OBSERVER_PAUSE                               &#125;,</span><br><span class="line">    <span class="comment">// 恢复 RtpObserver 的监听。该消息由 Router 处理。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;rtpObserver.resume&quot;</span>,                          ChannelRequest::MethodId::RTP_OBSERVER_RESUME                              &#125;,</span><br><span class="line">    <span class="comment">// 向 RtpObserver 新增 Producer。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;rtpObserver.addProducer&quot;</span>,                     ChannelRequest::MethodId::RTP_OBSERVER_ADD_PRODUCER                        &#125;,</span><br><span class="line">    <span class="comment">// 从 RtpObserver 移除 Producer。返回值无具体内容。</span></span><br><span class="line">    &#123; <span class="string">&quot;rtpObserver.removeProducer&quot;</span>,                  ChannelRequest::MethodId::RTP_OBSERVER_REMOVE_PRODUCER                     &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、PayloadChannelSocket-消息类型"><a href="#四、PayloadChannelSocket-消息类型" class="headerlink" title="四、PayloadChannelSocket 消息类型"></a>四、PayloadChannelSocket 消息类型</h2><p><code>PayloadChannelRequest::MethodId</code> 枚举定义一种消息。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// File: worker/src/PayloadChannel/PayloadChannelRequest.cpp</span></span><br><span class="line">absl::flat_hash_map&lt;std::string, PayloadChannelRequest::MethodId&gt; PayloadChannelRequest::string2MethodId =</span><br><span class="line">&#123;</span><br><span class="line">    <span class="comment">// DataConsumer 发送</span></span><br><span class="line">    &#123; <span class="string">&quot;dataConsumer.send&quot;</span>, PayloadChannelRequest::MethodId::DATA_CONSUMER_SEND &#125;,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="五、ChannelSocket-通知类型"><a href="#五、ChannelSocket-通知类型" class="headerlink" title="五、ChannelSocket 通知类型"></a>五、ChannelSocket 通知类型</h2><p>为了方便使用, mediasoup 定义了 <code>ChannelNotifier</code> 类用于 worker 向父进程发送通知。通知类型整理如下：</p>
+<table>
+<thead>
+<tr>
+<th>Sender</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Workder</td>
+<td>running</td>
+<td>worker 运行中。</td>
+</tr>
+<tr>
+<td>ActiveSpeakerObserver</td>
+<td>dominantspeaker</td>
+<td>当前主导发言者。</td>
+</tr>
+<tr>
+<td>AudioLevelObserver</td>
+<td>volumes</td>
+<td>当前发言者的音量。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>silence</td>
+<td>之前发言者已静音。</td>
+</tr>
+<tr>
+<td>Consumer</td>
+<td>producerpause</td>
+<td>生产者已暂停。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>producerresume</td>
+<td>生产者已恢复。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>producerclose</td>
+<td>生产者已关闭</td>
+</tr>
+<tr>
+<td>-</td>
+<td>trace</td>
+<td>跟踪消费者信息。类型包括：rtp、keyframe、nack、pli 和 fir。</td>
+</tr>
+<tr>
+<td>DataConsumer</td>
+<td>bufferedamountlow</td>
+<td>数据消费者 Sctp Buffer 低。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>dataproducerclose</td>
+<td>数据生产者已关闭。</td>
+</tr>
+<tr>
+<td>PlainTransport</td>
+<td>tuple</td>
+<td>TransportTuple。 当 comedia 为 true 时，通过收到的数据提取到 TransportTuple。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>rtcptuple</td>
+<td>TransportTuple。 当 comedia 为 true 且 rtcpMux 为 false, 通过收到的数据提取到 TransportTuple。</td>
+</tr>
+<tr>
+<td>Producer</td>
+<td>videoorientationchange</td>
+<td>视频方向发生改变。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>score</td>
+<td>Rtp 流的质量评分。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>trace</td>
+<td>跟踪生产者信息。类型包括：rtp、keyframe、nack、pli 和 fir。</td>
+</tr>
+<tr>
+<td>SctpAssociation</td>
+<td>sctpsendbufferfull</td>
+<td>DataConsumer 的 Sctp 发送 Buffer 已满。</td>
+</tr>
+<tr>
+<td>SimpleConsumer</td>
+<td>score</td>
+<td>Rtp 流的质量评分。</td>
+</tr>
+<tr>
+<td>SimulcastConsumer</td>
+<td>score</td>
+<td>Rtp 流的质量评分。包含自身的和 Producer 的。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>layerschange</td>
+<td>Layers 已改变。</td>
+</tr>
+<tr>
+<td>SvcConsumer</td>
+<td>score</td>
+<td>Rtp 流的质量评分。包含自身的和 Producer 的。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>layerschange</td>
+<td>Layers 已改变。</td>
+</tr>
+<tr>
+<td>Transport</td>
+<td>trace</td>
+<td>跟踪 Transport 信息。类型包括：probation 和 bwe。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>sctpstatechange</td>
+<td>Sctp 状态已改变。</td>
+</tr>
+<tr>
+<td>WebRtcTransport</td>
+<td>iceselectedtuplechange</td>
+<td>Ice 选择的 TransportTuple 已改变。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>icestatechange</td>
+<td>Ice 状态已改变。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>dtlsstatechange</td>
+<td>Dtls 状态已改变。 状态包括：connecting、connected、completed、disconnected、closed 和 failed。</td>
+</tr>
+</tbody></table>
+<h2 id="六、PayloadChannelSocket-通知类型"><a href="#六、PayloadChannelSocket-通知类型" class="headerlink" title="六、PayloadChannelSocket 通知类型"></a>六、PayloadChannelSocket 通知类型</h2><p>为了方便使用, mediasoup 定义了 <code>PayloadChannelNotifier</code> 类用于 worker 向父进程发送通知。通知类型整理如下：</p>
+<table>
+<thead>
+<tr>
+<th>Sender</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>DirectTransport</td>
+<td>rtp</td>
+<td>Rtp 包。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>rtcp</td>
+<td>Rtcp 包。</td>
+</tr>
+<tr>
+<td>-</td>
+<td>message</td>
+<td>消息。</td>
+</tr>
+</tbody></table>
+<h2 id="七、worker-进程的启动"><a href="#七、worker-进程的启动" class="headerlink" title="七、worker 进程的启动"></a>七、worker 进程的启动</h2><p>worker 是可执行程序，(一般来说)需要通过其他进程来启动。<br>启动时首先需要设置环境变量 <code>MEDIASOUP_VERSION</code>，通常设置为 mediaoup 真实的版本号。当然，如果非要设置成其他内容也没关系。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// File: worker/src/main.cpp</span></span><br><span class="line"><span class="comment">// Ensure we are called by our Node library.</span></span><br><span class="line"><span class="keyword">if</span> (!std::<span class="built_in">getenv</span>(<span class="string">&quot;MEDIASOUP_VERSION&quot;</span>))</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">MS_ERROR_STD</span>(<span class="string">&quot;you don&#x27;t seem to be my real father!&quot;</span>);</span><br><span class="line"></span><br><span class="line">    std::_Exit(EXIT_FAILURE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>还可以以命令行参数的方式设置 <code>logLevel</code>、<code>logTags</code>、<code>rtcMinPort</code> 和 <code>rtcMaxPort</code>、<code>dtlsCertificateFile</code> 和 <code>dtlsPrivateKeyFile</code>，分别表示日志等级、日志标签（如ice、dtls等，控制哪些类的日志才会传出）、最小和最大 rtc 端口，以及 dtls 证书文件和私钥的物理路径。这些参数都是可选的，如果未提供则会使用默认值或自动生成。</p>
+<p>因为 worker 是独立进程，需要和父进程通信。以 <code>Linux</code> 为例，在 <code>fork</code> 子进程后会将父进程的文件描述符传递到子进程中。具体来说 Node.js 程序 fork worker 进程之前，会创建几个 <code>libuv</code> 概念下而非 Linux 概念下的抽象意义上的 <code>pipe</code>，在 Linux 中使用的是 <code>UNIX Domain Socket</code>。fork 进程后，会在子进程将要使用的文件描述符重定向。这里子进程期望持有的文件描述符是 3-6，而实际上父进程创建的可能是 11-15，fork 之后子进程得到的还是 11-15，只要在子进程中使用 <code>fcntl</code> 系统调用重定向即可。通过合理的数量和顺序上的约定能确定重定向为 3-6。最终在子进程中 exec mediasoup-worker（见：uv__process_child_init）。<br>mediasoup 抽象出叫做 <code>ChannelSocket</code> 和 <code>PayloadChannelSocket</code> 的概念来表示 worker 和父进程的通信信道。</p>
+<blockquote>
+<p>mediasoup 最初只使用了 1 个文件描述符，后来改为了 2 个，再后来改为了 4 个。</p>
+</blockquote>
+<h2 id="八、以库的方式使用-worker"><a href="#八、以库的方式使用-worker" class="headerlink" title="八、以库的方式使用 worker"></a>八、以库的方式使用 worker</h2><p>在较长的一段时间，worker 都是以进程的方式运行，不过直到 2021 年 3 月发布的 <code>3.7.0</code> 开始, 准确地说是从 <code>1a805366</code> 的这次提交开始，已经支持以库的方式使用。</p>
+<p>如果要像 <a target="_blank" rel="noopener" href="https://github.com/yanhua133/mediasoup-sfu-cpp">mediasoup-sfu-cpp</a> 那样用纯 C++ 实现整个 mediasoup 服务端，则可以直接调用 <code>mediasoup_worker_run</code> 方法。当然，也就不用设置环境 MEDIASOUP_VERSION 变量了。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// File: worker/src/lib.hpp</span></span><br><span class="line"><span class="keyword">extern</span> <span class="string">&quot;C&quot;</span> <span class="type">int</span> <span class="title function_">mediasoup_worker_run</span><span class="params">(</span></span><br><span class="line"><span class="params">  <span class="type">int</span> argc,</span></span><br><span class="line"><span class="params">  <span class="type">char</span>* argv[],</span></span><br><span class="line"><span class="params">  <span class="type">const</span> <span class="type">char</span>* version,</span></span><br><span class="line"><span class="params">  <span class="type">int</span> consumerChannelFd,</span></span><br><span class="line"><span class="params">  <span class="type">int</span> producerChannelFd,</span></span><br><span class="line"><span class="params">  <span class="type">int</span> payloadConsumeChannelFd,</span></span><br><span class="line"><span class="params">  <span class="type">int</span> payloadProduceChannelFd,</span></span><br><span class="line"><span class="params">  ChannelReadFn channelReadFn,</span></span><br><span class="line"><span class="params">  ChannelReadCtx channelReadCtx,</span></span><br><span class="line"><span class="params">  ChannelWriteFn channelWriteFn,</span></span><br><span class="line"><span class="params">  ChannelWriteCtx channelWriteCtx,</span></span><br><span class="line"><span class="params">  PayloadChannelReadFn payloadChannelReadFn,</span></span><br><span class="line"><span class="params">  PayloadChannelReadCtx payloadChannelReadCtx,</span></span><br><span class="line"><span class="params">  PayloadChannelWriteFn payloadChannelWriteFn,</span></span><br><span class="line"><span class="params">  PayloadChannelWriteCtx payloadChannelWriteCtx)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>以进程方式运行时进程间通所使用的是文件描述符(consumerChannelFd等)，以库的方式运行则可以将函数指针传递给 mediasoup_worker_run 的其他参数（PayloadChannelReadFn等），都能够构造出 ChannelSocket 和 PayloadChannelSocket。</p>
+<p>还可以用多个线程执行 <code>mediasoup_worker_run</code>，以达到多个 worker 进程的效果。</p>
+<blockquote>
+<p>备注：mediasoup-sfu-cpp 是基于旧版 mediasoup，尚未更新至可以使用 mediasoup_worker_run 方法的版本。</p>
+</blockquote>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://zhangbin.blog.csdn.net/article/details/122351260">现代C++和Mediasoup的WebRTC集群服务实践</a><br><a target="_blank" rel="noopener" href="https://github.com/yanhua133/mediasoup-sfu-cpp">纯 C++ 实现的 Mediasoup 闫华</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/Frederick_Fung/article/details/106919882">【流媒体】Mediasoup库的架构（C++部分）</a><br><a target="_blank" rel="noopener" href="https://github.com/libuv/libuv">libuv</a><br><a target="_blank" rel="noopener" href="https://mediasoup.org/documentation/v3/mediasoup/design/">mediasoup v3 Design</a><br><a target="_blank" rel="noopener" href="https://mediasoup.org/documentation/v3/mediasoup/api/">mediasoup v3 API</a><br><a target="_blank" rel="noopener" href="https://mediasoup.org/documentation/v3/mediasoup-client/api/">mediasoup-client v3 API</a></p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Mediasoup/" rel="tag"># Mediasoup</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/11/mediasoup-02/" rel="prev" title="在 macOS 12.2.1(Apple M1)/Xcode 13.2.1(MacOSX12.1.sdk) 下编译 libmediasoupclient">
+      <i class="fa fa-chevron-left"></i> 在 macOS 12.2.1(Apple M1)/Xcode 13.2.1(MacOSX12.1.sdk) 下编译 libmediasoupclient
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/22/mediasoup-build/" rel="next" title="mediasoup 3.9.10 worker 的编译及生成 xcodeproj 和 sln">
+      mediasoup 3.9.10 worker 的编译及生成 xcodeproj 和 sln <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E5%90%8D%E8%AF%8D-%E6%A6%82%E5%BF%B5"><span class="nav-number">2.</span> <span class="nav-text">二、名词&#x2F;概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81ChannelSocket-%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B"><span class="nav-number">3.</span> <span class="nav-text">三、ChannelSocket 消息类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81PayloadChannelSocket-%E6%B6%88%E6%81%AF%E7%B1%BB%E5%9E%8B"><span class="nav-number">4.</span> <span class="nav-text">四、PayloadChannelSocket 消息类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%94%E3%80%81ChannelSocket-%E9%80%9A%E7%9F%A5%E7%B1%BB%E5%9E%8B"><span class="nav-number">5.</span> <span class="nav-text">五、ChannelSocket 通知类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AD%E3%80%81PayloadChannelSocket-%E9%80%9A%E7%9F%A5%E7%B1%BB%E5%9E%8B"><span class="nav-number">6.</span> <span class="nav-text">六、PayloadChannelSocket 通知类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%83%E3%80%81worker-%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%90%AF%E5%8A%A8"><span class="nav-number">7.</span> <span class="nav-text">七、worker 进程的启动</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AB%E3%80%81%E4%BB%A5%E5%BA%93%E7%9A%84%E6%96%B9%E5%BC%8F%E4%BD%BF%E7%94%A8-worker"><span class="nav-number">8.</span> <span class="nav-text">八、以库的方式使用 worker</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">9.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alby"
+      src="/images/avatar200x200.png">
+  <p class="site-author-name" itemprop="name">Alby</p>
+  <div class="site-description" itemprop="description">Catch.</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">50</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">16</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/albyho" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;albyho" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Alby Email: echo "YWxieUBmb3htYWlsLmNvbQo=" | base64 -D</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://mist.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Mist</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+  
+
+</body>
+</html>
