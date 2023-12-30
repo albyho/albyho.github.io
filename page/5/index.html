@@ -218,7 +218,7 @@
           <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Libuv 官方文档( <a target="_blank" rel="noopener" href="https://github.com/libuv/libuv/tree/v1.x/docs">https://github.com/libuv/libuv/tree/v1.x/docs</a> )和 uvbook ( <a target="_blank" rel="noopener" href="http://nikhilm.github.com/uvbook/">http://nikhilm.github.com/uvbook/</a> ) 对 I&#x2F;O ( event ) 循环有比较详细的介绍。<br>本文首先摘抄&#x2F;抄袭了网络上对官方文档关于 I&#x2F;O( event ) 描述的翻译，并做了必要的补充。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/08/20/libuv-analysis-08/#more" rel="contents">
+              <a class="btn" href="/2017/08/20/libuv-analysis-08/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -299,7 +299,7 @@
           <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Libuv 用到了一些复合类型的数据结构：队列( Queue )、红黑树( Red-Black tree )、最小二叉堆( Binary min heap )等。其中队列和最小二叉堆是以宏的形式实现的。<br>红黑树主要用于信号处理( Signal Handle )；最小二叉堆主要用于计时器( Timer )。<br>树和堆的实现不像队列实现那样有特色，甚至很多 Linux&#x2F;UNIX 操作系统本身就包含实现，故本文主要提供一些树和堆的参考资料的链接。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/03/14/libuv-analysis-07/#more" rel="contents">
+              <a class="btn" href="/2017/03/14/libuv-analysis-07/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -380,7 +380,7 @@
           <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Libuv 用到了一些复合类型的数据结构：队列( Queue )、最小二叉堆( Binary min heap )、红黑树( R-B tree )等。其中队列和最小二叉堆是以宏的形式实现的。<br>本文主要分析 Libuv 队列。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/03/14/libuv-analysis-06/#more" rel="contents">
+              <a class="btn" href="/2017/03/14/libuv-analysis-06/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -462,7 +462,7 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -E src/uv-common.c -o src/uv-common.i -Iinclude -Isrc -Isrc/unix</span><br></pre></td></tr></table></figure>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/03/14/libuv-analysis-05/#more" rel="contents">
+              <a class="btn" href="/2017/03/14/libuv-analysis-05/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -543,7 +543,7 @@
           <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Libuv 定义了若干枚举，本文集中列出方便查询( 针对 Windows 平台的枚举未完全列出)。这些枚举主要定义在如下文件：<br>include&#x2F;uv.h<br>include&#x2F;uv-common.h<br>src&#x2F;unix&#x2F;internal.h<br>src&#x2F;unix&#x2F;fsevents.c ( Darwin )<br>src&#x2F;win&#x2F;tty.c ( Windows )<br>src&#x2F;win&#x2F;winapi.h ( Windows )</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/03/14/libuv-analysis-04/#more" rel="contents">
+              <a class="btn" href="/2017/03/14/libuv-analysis-04/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -625,7 +625,7 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> UV__EOF     (-4095)</span></span><br></pre></td></tr></table></figure>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/03/14/libuv-analysis-03/#more" rel="contents">
+              <a class="btn" href="/2017/03/14/libuv-analysis-03/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -706,7 +706,7 @@
           <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Libuv 采用了异步( asynchronous ), 事件驱动( event-driven )的编程风格, 其核心任务是为开人员提供了一套事件循环和基于 I&#x2F;O (或其他活动)通知的回调函数, Libuv 提供了一套核心的工具集, 例如定时器, 非阻塞网络编程的支持, 异步访问文件系统, 子进程以及其他功能。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/03/11/libuv-analysis-02/#more" rel="contents">
+              <a class="btn" href="/2017/03/11/libuv-analysis-02/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -787,7 +787,7 @@
           <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Github 上有 Libuv 的镜像，直接下载即可。想在 macOS 系统下进行源码分析，Source Insight 没有 macOS 版，wine 执行也不好用，虚拟机不想装，类似的源码分析工具没试过。幸好 Libuv 支持使用 GYP 生成 Xcode 项目文件。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2017/03/10/libuv-analysis-01/#more" rel="contents">
+              <a class="btn" href="/2017/03/10/libuv-analysis-01/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -868,7 +868,7 @@
           <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>状态栏( <code>UIStatusBar</code> )指 iPhone&#x2F;iPad&#x2F;iPod 屏幕顶部用于显示网络、时间和电量等的、高度为20点的控件。状态栏的 <code>windowLevel</code> 为 <code>UIWindowLevelStatusBar</code> ，而 window 的 <code>windowLevel</code> 为 <code>UIWindowLevelNormal</code> 。所以一般情况下，状态栏位于 window 之上。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2016/09/07/UIStatusBar/#more" rel="contents">
+              <a class="btn" href="/2016/09/07/UIStatusBar/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -949,7 +949,7 @@
           <h2 id="一、MOV-MP4-视频文件中的-Rotation-元数据"><a href="#一、MOV-MP4-视频文件中的-Rotation-元数据" class="headerlink" title="一、MOV&#x2F;MP4 视频文件中的 Rotation 元数据"></a>一、MOV&#x2F;MP4 视频文件中的 Rotation 元数据</h2><p>iOS 上内置相机应用录制的 mov&#x2F;mp4 视频可能产生一个 Rotation 元数据，表示录制视频时摄像头旋转到了多少角度。其值一般为这四个：0、90、180或270。类似于图片文件的 <code>Exif</code> 信息中的 Orientation 元数据。<br>Rotation 元数据用于播放器确定渲染视频的方向，但有的播放器会对其视而不见。稍后会测试几种常见的播放器&#x2F;播放控件对 Rotation 元数据的支持。</p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2016/09/07/video-orientation/#more" rel="contents">
+              <a class="btn" href="/2016/09/07/video-orientation/" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
