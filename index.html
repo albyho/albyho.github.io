@@ -161,6 +161,81 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2024/09/04/ffmpeg-recorder/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2024/09/04/ffmpeg-recorder/" class="post-title-link" itemprop="url">Shell 调用 FFmpeg 进行定时启动和停止录制</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2024-09-04 04:39:24 / 修改时间：04:43:12" itemprop="dateCreated datePublished" datetime="2024-09-04T04:39:24+08:00">2024-09-04</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/FFmpeg/" itemprop="url" rel="index"><span itemprop="name">FFmpeg</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Shell 调用 FFmpeg 进行定时启动和停止录制。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2024/09/04/ffmpeg-recorder/" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2024/01/23/mediasoup-build-02/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -905,119 +980,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2022/04/21/mediasoup-source-01/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar200x200.png">
-      <meta itemprop="name" content="Alby">
-      <meta itemprop="description" content="Catch.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Alby's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/04/21/mediasoup-source-01/" class="post-title-link" itemprop="url">mediasoup 3.9.10 worker 源码初步梳理</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2022-04-21 10:54:43" itemprop="dateCreated datePublished" datetime="2022-04-21T10:54:43+08:00">2022-04-21</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-04-22 21:13:29" itemprop="dateModified" datetime="2022-04-22T21:13:29+08:00">2022-04-22</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Mediasoup/" itemprop="url" rel="index"><span itemprop="name">Mediasoup</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p><code>Mediasoup</code> 主要提供了 3 个库和 1 个 demo。</p>
-<table>
-<thead>
-<tr>
-<th>库名</th>
-<th>说明</th>
-</tr>
-</thead>
-<tbody><tr>
-<td><a target="_blank" rel="noopener" href="https://github.com/versatica/mediasoup">mediasoup</a></td>
-<td>主要包含三部分。一是 worker 可执行程序，由 C++ 实现，是本系列分析的重点；二是 Node 库，由 TypeScript 实现；三是 Rust 库，和 Node 的主要不同在于它没有以进程方式而是以静态库方式使用 mediasoup-worker。</td>
-</tr>
-<tr>
-<td><a target="_blank" rel="noopener" href="https://github.com/versatica/mediasoup-client">mediasoup-client</a></td>
-<td>Web 客户端库。TypeScript 实现。</td>
-</tr>
-<tr>
-<td><a target="_blank" rel="noopener" href="https://github.com/versatica/libmediasoupclient">libmediasoupclient</a></td>
-<td>Native 客户端库。C++ 实现。</td>
-</tr>
-<tr>
-<td><a target="_blank" rel="noopener" href="https://github.com/versatica/mediasoup-demo">mediasoup-demo</a></td>
-<td>官方 Demo。</td>
-</tr>
-<tr>
-<td><a target="_blank" rel="noopener" href="https://mediasoup.org/documentation/examples/">Examples</a></td>
-<td>各种示例。</td>
-</tr>
-</tbody></table>
-<p>网络上对 mediasoup 的 <code>Node.js</code> 层——准确说是对官方的 <code>mediasoup-demo</code> 的源码分析比较多，对于 <code>mediasoup-client</code> 和 <code>mediasoup-worker</code> (之后简 worker) 等的源码详细分析相对较少。本人之前有将 <code>GB28281</code> 集成进 mediasoup 的想法并验证了可行性，以及使用 <code>.Net</code> 重新实现过 Node.js 层（含 mediasoup-client 和 mediasoup-demo），对 worker 的源码进行过比较粗略地浏览。最近基于想要弥补一些比较模糊的认知，并且 mediaoup 本身也在进化，故就再做了一次源码的梳理。</p>
-<blockquote>
-<p>至于 mediasoup 是什么、能做什么、与其他 SFU 相较而言的优缺点、Demo 如何运行、为什么不用单一语言来实现等等讨论不是本系列关注的重点。</p>
-</blockquote>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/04/21/mediasoup-source-01/" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1089,7 +1051,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">52</span>
+          <span class="site-state-item-count">53</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>

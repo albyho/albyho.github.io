@@ -161,6 +161,88 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2020/10/23/spectrum-analyzer-01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/10/23/spectrum-analyzer-01/" class="post-title-link" itemprop="url">在 WPF 中绘制功率谱(Power Spectrum)</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-23 03:36:10" itemprop="dateCreated datePublished" datetime="2020-10-23T03:36:10+08:00">2020-10-23</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-12-12 19:41:48" itemprop="dateModified" datetime="2021-12-12T19:41:48+08:00">2021-12-12</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Audio/" itemprop="url" rel="index"><span itemprop="name">Audio</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>本文简述在 <code>WPF</code> 中绘制功率谱(Power Spectrum)。会将功率谱密度(<a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E5%8A%9F%E7%8E%87%E8%B0%B1%E5%AF%86%E5%BA%A6/8836146">PSD</a>,Power spectral density)单位转换为分贝(dB, Decibel)， 实现类似于 <a target="_blank" rel="noopener" href="https://www.adobe.com/cn/products/audition.html">Adobe Audition</a> 软件中频谱分析的功能。为简单起见及本人需要，<a target="_blank" rel="noopener" href="https://de.wikipedia.org/wiki/FFT">FFT</a> 数量使用 <code>2048</code>，窗口函数使用<a target="_blank" rel="noopener" href="https://baike.baidu.com/item/%E6%B1%89%E5%AE%81%E7%AA%97/10378703">汉宁窗(Hanning)</a>。</p>
+<p><img src="/postimages/spectrum-analyzer-01/001.png"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/10/23/spectrum-analyzer-01/" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2020/05/05/mediasoup-01/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -906,87 +988,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2019/03/28/aspnetcore-extension-points/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar200x200.png">
-      <meta itemprop="name" content="Alby">
-      <meta itemprop="description" content="Catch.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Alby's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2019/03/28/aspnetcore-extension-points/" class="post-title-link" itemprop="url">ASP.NET Core 的 `Core` 有几种写法？</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2019-03-28 00:54:26" itemprop="dateCreated datePublished" datetime="2019-03-28T00:54:26+08:00">2019-03-28</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-12-12 19:29:20" itemprop="dateModified" datetime="2021-12-12T19:29:20+08:00">2021-12-12</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/ASP-NET-Core/" itemprop="url" rel="index"><span itemprop="name">ASP.NET Core</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>本文将会根据情况持续更新。<br>作为一个 <code>Framework</code>，<code>ASP.NET Core</code> 提供了诸多的扩展点。使用内置的组件和默认的配置通常就能够满足部分需求，当需要扩展的时就需要先去找出这些扩展点。除了基于实际应用对 <code>ASP.NET Core</code> 进行扩展，也会故意搞一些不切实际的伪需求，解决一些不会存在的问题。这样的目的何在呢？一是为了加深对 <code>ASP.NET Core</code> 的理解，二是难保这些伪需求不会变成真需求。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/03/28/aspnetcore-extension-points/" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1058,7 +1059,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">52</span>
+          <span class="site-state-item-count">53</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
