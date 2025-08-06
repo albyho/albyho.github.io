@@ -161,6 +161,115 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2025/08/06/ray-01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2025/08/06/ray-01/" class="post-title-link" itemprop="url">Ray 应用场景一例</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2025-08-06 22:20:25" itemprop="dateCreated datePublished" datetime="2025-08-06T22:20:25+08:00">2025-08-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-08-07 01:58:18" itemprop="dateModified" datetime="2025-08-07T01:58:18+08:00">2025-08-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Ray/" itemprop="url" rel="index"><span itemprop="name">Ray</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>从网络<code>下载</code>视频数据，再进行<code>本地 AI 分析</code>，接着<code>调用 LLM(ChatGPT、DeepSeek、Gemini、Qwen等) API</code>，最后<code>生成文档</code>。<br>整个任务链涵盖了 IO 密集型、GPU 密集型、CPU+IO 混合型运算。<br>本文讲述了如何使用分布式计算框架 <a target="_blank" rel="noopener" href="https://docs.ray.io/"><code>Ray</code></a> 来满足需求。</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>并发性</th>
+<th>资源效率</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>独立 placement group 每组绑定同一节点</strong></td>
+<td>❌</td>
+<td>⭐⭐</td>
+<td>安全、可控但排队严重(strategy&#x3D;”PACK”)</td>
+</tr>
+<tr>
+<td><strong>Actor 保持节点定位 + 并发执行</strong></td>
+<td>✅</td>
+<td>⭐⭐⭐</td>
+<td>状态管理方便，适合流式任务或推理类任务</td>
+</tr>
+<tr>
+<td><strong>共享节点资源调度 + 同节点约束资源标签</strong></td>
+<td>✅</td>
+<td>⭐⭐⭐⭐</td>
+<td>灵活调度，但实现稍复杂</td>
+</tr>
+</tbody></table>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2025/08/06/ray-01/" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2025/06/07/pandoc-markdown-to-docs-with-mermaid/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -945,87 +1054,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2023/04/04/speech-speaker-identification-using-pyannote-audio/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar200x200.png">
-      <meta itemprop="name" content="Alby">
-      <meta itemprop="description" content="Catch.">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Alby's blog">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2023/04/04/speech-speaker-identification-using-pyannote-audio/" class="post-title-link" itemprop="url">基于 pyannote.audio 实现 Speaker Identification（说话人识别）</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2023-04-04 22:13:45" itemprop="dateCreated datePublished" datetime="2023-04-04T22:13:45+08:00">2023-04-04</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2023-05-14 03:09:09" itemprop="dateModified" datetime="2023-05-14T03:09:09+08:00">2023-05-14</time>
-              </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Speech/" itemprop="url" rel="index"><span itemprop="name">Speech</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p><code>pyannote.audio</code> 直接能够进行 <code>Speaker Verification</code>、<code>Speaker Diarization</code> 等任务，但尚未提供 <code>Speaker Identification</code>。 本文简述如何基于 pyannote.audio 进行 Speaker Identification。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2023/04/04/speech-speaker-identification-using-pyannote-audio/" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1097,20 +1125,20 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">55</span>
+          <span class="site-state-item-count">56</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
             <a href="/categories/">
           
-        <span class="site-state-item-count">17</span>
+        <span class="site-state-item-count">18</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">25</span>
+        <span class="site-state-item-count">26</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
