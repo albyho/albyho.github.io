@@ -30,7 +30,7 @@
 <meta property="og:image" content="http://blog.tubumu.com/postimages/ray-01/01.png">
 <meta property="og:image" content="http://blog.tubumu.com/postimages/ray-01/02.png">
 <meta property="article:published_time" content="2025-08-06T14:20:25.000Z">
-<meta property="article:modified_time" content="2025-11-13T07:00:47.272Z">
+<meta property="article:modified_time" content="2025-11-13T07:10:48.197Z">
 <meta property="article:author" content="Alby">
 <meta property="article:tag" content="Python">
 <meta property="article:tag" content="Ray">
@@ -198,7 +198,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2025-11-13 15:00:47" itemprop="dateModified" datetime="2025-11-13T15:00:47+08:00">2025-11-13</time>
+                <time title="修改时间：2025-11-13 15:10:48" itemprop="dateModified" datetime="2025-11-13T15:10:48+08:00">2025-11-13</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -291,6 +291,9 @@
 <figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">    <span class="attr">&quot;object_store_memory&quot;</span><span class="punctuation">:</span> <span class="number">2147483648</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;node:127.0.0.1&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;head&quot;</span><span class="punctuation">:</span> <span class="number">8</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;step_a_slot&quot;</span><span class="punctuation">:</span> <span class="number">1000</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;CPU&quot;</span><span class="punctuation">:</span> <span class="number">16</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;node:__internal_head__&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;memory&quot;</span><span class="punctuation">:</span> <span class="number">9066250240</span><span class="punctuation">,</span></span><br><span class="line">    <span class="attr">&quot;GPU&quot;</span><span class="punctuation">:</span> <span class="number">2</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
 
 <p>所以可以在 <code>create_step_b</code> 这个<strong>非</strong> Task 方法设置运行 <code>step_b</code> 所需要的资源，即 <code>resource_key</code>。注意 <code>resource_key</code> 要设置小一点，否则在多 GPU 的情况下可能会导致无法并行运行 <code>step_b</code>。<br>最终，达到让同一个任务的 <code>step_a</code> 和 <code>step_b</code> 运行在同一个节点上的目的。</p>
+<blockquote>
+<p>由于断开了 <code>step_a</code> 和 <code>step_b</code> 的代码层面上的直接依赖，也就是 <code>step_b</code> 的参数没有依赖 <code>step_a</code> 的结果，在 <code>create_step_b</code> 之前，<code>Dashboard</code> 上是看不到 <code>step_b</code>、<code>step_c</code>、<code>step_d</code> 在等待被调度(<code>Waiting for scheduling</code>)的。</p>
+</blockquote>
 <h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://docs.ray.io/">Ray 官方文档</a><br><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/tasks.html">Ray: Tasks</a><br><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/actors.html">Ray: Actors</a><br><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/scheduling/placement-group.html">Ray: Placement Group</a><br><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/tasks.html#passing-object-refs-to-ray-tasks">Ray: 给 Task 传递对象引用</a></p>
 
     </div>
