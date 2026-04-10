@@ -214,7 +214,7 @@
       <span class="post-meta-item-text">发表于</span>
       
 
-      <time title="创建时间：2026-04-11 03:50:52 / 修改时间：04:03:07" itemprop="dateCreated datePublished" datetime="2026-04-11T03:50:52+08:00">2026-04-11</time>
+      <time title="创建时间：2026-04-11 03:50:52 / 修改时间：04:05:01" itemprop="dateCreated datePublished" datetime="2026-04-11T03:50:52+08:00">2026-04-11</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -239,7 +239,7 @@
           <p>在使用 Oh My Zsh 的经典主题 ys 时，如果你安装了 Anaconda 或 Miniconda，默认情况下 Conda 会强行在 Prompt 最前方插入一行 (base)。这不仅破坏了主题原本的双行美感，还让终端显得异常臃肿。</p>
 <p>本文将分享如何通过微调 .zshrc，将 Conda 环境名无缝嵌入到用户名与主机名之后，并保持 ys 原汁原味的配色方案。</p>
 <p>默认情况下，终端可能是这样的：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(base)</span><br><span class="line"><span class="comment"># alby@tubumu @ MSI in ~/dev on git:main x [08:00:00]</span></span><br><span class="line">$</span><br></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">(base)</span><br><span class="line"><span class="comment"># alby@tubumu in ~/dev on git:main x [08:00:00]</span></span><br><span class="line">$</span><br></pre></td></tr></table></figure>
 
 <p>三行显示不仅浪费空间，且视觉上非常割裂。我们期望的目标是将其压缩回两行，并让环境名成为“身份标识”的一部分：</p>
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># alby@tubumu (base) in ~/dev on git:main x [08:00:00]</span></span><br><span class="line">$</span><br></pre></td></tr></table></figure>
