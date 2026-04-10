@@ -142,18 +142,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">58</span>
+          <span class="site-state-item-count">59</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-count">20</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-count">30</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -175,6 +175,98 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2017/03/14/libuv-analysis-07/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Alby's blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2017/03/14/libuv-analysis-07/" class="post-title-link" itemprop="url">Libuv 源码分析(7):数据结构—复合类型(红黑树、最小二叉堆)</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2017-03-14 21:17:03" itemprop="dateCreated datePublished" datetime="2017-03-14T21:17:03+08:00">2017-03-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-05 02:58:35" itemprop="dateModified" datetime="2026-01-05T02:58:35+08:00">2026-01-05</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Code Reading</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Libuv 用到了一些复合类型的数据结构：队列( Queue )、红黑树( Red-Black tree )、最小二叉堆( Binary min heap )等。其中队列和最小二叉堆是以宏的形式实现的。<br>红黑树主要用于信号处理( Signal Handle )；最小二叉堆主要用于计时器( Timer )。<br>树和堆的实现不像队列实现那样有特色，甚至很多 Linux&#x2F;UNIX 操作系统本身就包含实现，故本文主要提供一些树和堆的参考资料的链接。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2017/03/14/libuv-analysis-07/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
