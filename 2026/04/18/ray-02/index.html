@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.tubumu.com","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"always","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="一、概述在上一篇Ray 应用场景一例文章中，介绍了使用 Ray 内置的 node:IP 资源来实现任务绑定到特定节点。这种方法简单直接，但有一个明显的缺陷：每次 GPU 任务启动时，都需要重新加载模型，在某些应用场景下纯属浪费。而且 node:IP 在 Ray 官方文档中也没体现，可能过于”私有”。 本文介绍一种更高效的方案：使用 Actor Pool 实现模型预热，并通过 NodeAffinit">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ray Actor Pool 实战：GPU 模型预热与节点级资源调度">
+<meta property="og:url" content="http://blog.tubumu.com/2026/04/18/ray-02/index.html">
+<meta property="og:site_name" content="Alby&#39;s blog">
+<meta property="og:description" content="一、概述在上一篇Ray 应用场景一例文章中，介绍了使用 Ray 内置的 node:IP 资源来实现任务绑定到特定节点。这种方法简单直接，但有一个明显的缺陷：每次 GPU 任务启动时，都需要重新加载模型，在某些应用场景下纯属浪费。而且 node:IP 在 Ray 官方文档中也没体现，可能过于”私有”。 本文介绍一种更高效的方案：使用 Actor Pool 实现模型预热，并通过 NodeAffinit">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-04-18T14:20:25.000Z">
+<meta property="article:modified_time" content="2026-04-18T12:35:04.764Z">
+<meta property="article:author" content="Alby">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="Ray">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://blog.tubumu.com/2026/04/18/ray-02/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://blog.tubumu.com/2026/04/18/ray-02/","path":"2026/04/18/ray-02/","title":"Ray Actor Pool 实战：GPU 模型预热与节点级资源调度"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Ray Actor Pool 实战：GPU 模型预热与节点级资源调度 | Alby's blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Alby's blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">世上没有巧合，只有巧合的假象。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E3%80%81%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">一、概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8C%E3%80%81%E8%AE%BE%E8%AE%A1%E8%A6%81%E7%82%B9"><span class="nav-number">2.</span> <span class="nav-text">二、设计要点</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-Actor-Pool%EF%BC%9F"><span class="nav-number">2.1.</span> <span class="nav-text">1、为什么需要 Actor Pool？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8-Manager-Actor-%E7%AE%A1%E7%90%86%E5%85%B6%E4%BB%96-Actor%EF%BC%9F"><span class="nav-number">2.2.</span> <span class="nav-text">2、为什么用 Manager Actor 管理其他 Actor？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3%E3%80%81%E8%8A%82%E7%82%B9%E7%BA%A7-Actor-Pool"><span class="nav-number">2.3.</span> <span class="nav-text">3、节点级 Actor Pool</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4%E3%80%81%E4%BB%BB%E5%8A%A1%E7%BB%91%E5%AE%9A%E6%B5%81%E7%A8%8B"><span class="nav-number">2.4.</span> <span class="nav-text">4、任务绑定流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E3%80%81Talk-is-cheap"><span class="nav-number">3.</span> <span class="nav-text">三、Talk is cheap</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1%E3%80%81RayActorPoolManagerActor"><span class="nav-number">3.1.</span> <span class="nav-text">1、RayActorPoolManagerActor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2%E3%80%81RayActor"><span class="nav-number">3.2.</span> <span class="nav-text">2、RayActor</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3%E3%80%81%E5%88%9D%E5%A7%8B%E5%8C%96-Actor-Pool"><span class="nav-number">3.3.</span> <span class="nav-text">3、初始化 Actor Pool</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4%E3%80%81Pipeline-%E8%B0%83%E5%BA%A6"><span class="nav-number">3.4.</span> <span class="nav-text">4、Pipeline 调度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5%E3%80%81%E5%90%AF%E5%8A%A8-Ray-%E9%9B%86%E7%BE%A4"><span class="nav-number">3.5.</span> <span class="nav-text">5、启动 Ray 集群</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6%E3%80%81%E6%97%A5%E5%BF%97%E7%A4%BA%E4%BE%8B"><span class="nav-number">3.6.</span> <span class="nav-text">6、日志示例</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81%E5%AF%B9%E6%AF%94-node-IP-%E8%B5%84%E6%BA%90%E7%BB%91%E5%AE%9A%E6%96%B9%E6%A1%88"><span class="nav-number">4.</span> <span class="nav-text">四、对比 node:IP 资源绑定方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-number">5.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alby"
+      src="/images/avatar200x200.png">
+  <p class="site-author-name" itemprop="name">Alby</p>
+  <div class="site-description" itemprop="description">Catch.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/albyho" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;albyho" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2026/04/18/ray-02/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Ray Actor Pool 实战：GPU 模型预热与节点级资源调度 | Alby's blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ray Actor Pool 实战：GPU 模型预热与节点级资源调度
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-04-18 22:20:25 / 修改时间：20:35:04" itemprop="dateCreated datePublished" datetime="2026-04-18T22:20:25+08:00">2026-04-18</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Python/" itemprop="url" rel="index"><span itemprop="name">Python</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>在上一篇<a href="https://blog.tubumu.com/2025/08/06/ray-01/">Ray 应用场景一例</a>文章中，介绍了使用 Ray 内置的 <code>node:IP</code> 资源来实现任务绑定到特定节点。这种方法简单直接，但有一个明显的缺陷：每次 GPU 任务启动时，都需要重新加载模型，在某些应用场景下纯属浪费。而且 <code>node:IP</code> 在 Ray 官方文档中也没体现，可能过于”私有”。</p>
+<p>本文介绍一种更高效的方案：使用 Actor Pool 实现模型预热，并通过 <code>NodeAffinitySchedulingStrategy</code> 实现节点级资源调度。</p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th>模型预热</th>
+<th>调度灵活性</th>
+<th>实现复杂度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>node:IP 资源绑定</strong></td>
+<td>❌ 每次重新加载</td>
+<td>⭐⭐</td>
+<td>简单</td>
+</tr>
+<tr>
+<td><strong>Actor Pool + NodeAffinity</strong></td>
+<td>✅ 预加载复用</td>
+<td>⭐⭐⭐⭐</td>
+<td>中等</td>
+</tr>
+</tbody></table>
+<p>核心思路：</p>
+<ol>
+<li><strong>Actor 预热</strong>：在 Actor 初始化时加载模型，Actor 持久存活，跨任务复用</li>
+<li><strong>节点级 Actor Pool</strong>：每个节点独立管理自己的 Actor Pool，避免跨节点数据传输</li>
+<li><strong>零资源 Manager</strong>：用一个不占 CPU&#x2F;GPU 的 Actor 管理其他 Actor</li>
+</ol>
+<span id="more"></span>
+
+<h2 id="二、设计要点"><a href="#二、设计要点" class="headerlink" title="二、设计要点"></a>二、设计要点</h2><h3 id="1、为什么需要-Actor-Pool？"><a href="#1、为什么需要-Actor-Pool？" class="headerlink" title="1、为什么需要 Actor Pool？"></a>1、为什么需要 Actor Pool？</h3><p>Ray 提供了 <code>ray.util.actor_pool</code>，但官方文档明确指出它<strong>不是线程安全的</strong>。在多任务并发场景下，直接使用会导致竞态条件。</p>
+<p>更关键的是，我们需要 Actor 具备以下特性：</p>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>模型预热</strong></td>
+<td>Actor 初始化时加载 Sherpa（ASR）和 MiniCPM（视频分析）模型，约 30 秒</td>
+</tr>
+<tr>
+<td><strong>持久存活</strong></td>
+<td><code>lifetime=&quot;detached&quot;</code>，Actor 不随任务结束而销毁</td>
+</tr>
+<tr>
+<td><strong>节点绑定</strong></td>
+<td>通过 <code>NodeAffinitySchedulingStrategy</code> 确保 Actor 不会跨节点迁移</td>
+</tr>
+<tr>
+<td><strong>排队机制</strong></td>
+<td>满载时新请求自动排队，无需调用方处理</td>
+</tr>
+</tbody></table>
+<h3 id="2、为什么用-Manager-Actor-管理其他-Actor？"><a href="#2、为什么用-Manager-Actor-管理其他-Actor？" class="headerlink" title="2、为什么用 Manager Actor 管理其他 Actor？"></a>2、为什么用 Manager Actor 管理其他 Actor？</h3><p>如果直接创建多个 GPU Actor，调用方需要：</p>
+<ol>
+<li>知道有多少个 Actor</li>
+<li>知道每个 Actor 的名字</li>
+<li>自己实现调度逻辑（哪个 Actor 空闲？）</li>
+<li>自己管理空闲&#x2F;忙碌状态</li>
+</ol>
+<p>引入 Manager Actor 后，调用方只需一行代码：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">manager = ray.get_actor(<span class="string">f&quot;RayActorPoolManagerActor_<span class="subst">&#123;node_id&#125;</span>&quot;</span>)</span><br><span class="line">result = manager.run.remote(...)  <span class="comment"># 内部自动调度到空闲 Actor</span></span><br></pre></td></tr></table></figure>
+
+<p>Manager Actor 的关键设计：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ray.remote(<span class="params">num_cpus=<span class="number">0</span>, num_gpus=<span class="number">0</span></span>)  </span><span class="comment"># 零资源占用，纯管理角色</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RayActorPoolManagerActor</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, node_id, actor_count</span>):</span><br><span class="line">        <span class="variable language_">self</span>.idle_actors = asyncio.Queue(maxsize=actor_count)  <span class="comment"># 线程安全的队列</span></span><br><span class="line">        <span class="comment"># ...</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="3、节点级-Actor-Pool"><a href="#3、节点级-Actor-Pool" class="headerlink" title="3、节点级 Actor Pool"></a>3、节点级 Actor Pool</h3><p>每个节点运行一个 Manager，名字包含 <code>node_id</code>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">┌────────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                                 Ray Cluster                                │</span><br><span class="line">│                                                                            │</span><br><span class="line">│  ┌─────────────────────────────────┐  ┌─────────────────────────────────┐  │</span><br><span class="line">│  │      Head Node                  │  │      Worker Node                │  │</span><br><span class="line">│  │                                 │  │                                 │  │</span><br><span class="line">│  │  RayActorPoolManagerActor       │  │  RayActorPoolManagerActor       │  │</span><br><span class="line">│  │       _&#123;head_node_id&#125;           │  │       _&#123;worker_node_id&#125;         │  │</span><br><span class="line">│  │                ↓                │  │                ↓                │  │</span><br><span class="line">│  │  ┌──────┬──────┬──────┬──────┐  │  │  ┌──────┬──────┬──────┬──────┐  │  │</span><br><span class="line">│  │  │Actor │Actor │Actor │Actor │  │  │  │Actor │Actor │Actor │Actor │  │  │</span><br><span class="line">│  │  │_0    │_1    │_2    │_3    │  │  │  │_0    │_1    │_2    │_3    │  │  │</span><br><span class="line">│  │  └──────┴──────┴──────┴──────┘  │  │  └──────┴──────┴──────┴──────┘  │  │</span><br><span class="line">│  │             4 GPUs              │  │             4 GPUs              │  │</span><br><span class="line">│  └─────────────────────────────────┘  └─────────────────────────────────┘  │</span><br><span class="line">│                                                                            │</span><br><span class="line">└────────────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p>好处：</p>
+<ul>
+<li><strong>数据本地性</strong>：视频下载后保存在节点本地，GPU 分析直接读取，无跨节点传输</li>
+<li><strong>节点隔离</strong>：每个节点独立管理 GPU 资源，不互相干扰</li>
+<li><strong>弹性扩展</strong>：新增 Worker 只需运行初始化脚本，自动创建新 Pool</li>
+</ul>
+<h3 id="4、任务绑定流程"><a href="#4、任务绑定流程" class="headerlink" title="4、任务绑定流程"></a>4、任务绑定流程</h3><p>Pipeline 的执行流程：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">step_a → 返回 node_id → 根据 node_id 找到 Manager → Manager.run() → step_b</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># step_a 返回运行节点的 node_id</span></span><br><span class="line">step_a_result = ray.get(step_a.remote(analyze_item_dict))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 根据 node_id 找到对应节点的 Actor Pool</span></span><br><span class="line">manager_name = <span class="string">f&quot;RayActorPoolManagerActor_<span class="subst">&#123;step_a_result&#125;</span>&quot;</span></span><br><span class="line">manager = ray.get_actor(manager_name, namespace=<span class="string">&quot;global&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># step_b 自动调度到 step_a 所在节点的空闲 Actor</span></span><br><span class="line">step_b_result = manager.run.remote(analyze_item_dict, step_a_result)</span><br></pre></td></tr></table></figure>
+
+<h2 id="三、Talk-is-cheap"><a href="#三、Talk-is-cheap" class="headerlink" title="三、Talk is cheap"></a>三、Talk is cheap</h2><h3 id="1、RayActorPoolManagerActor"><a href="#1、RayActorPoolManagerActor" class="headerlink" title="1、RayActorPoolManagerActor"></a>1、RayActorPoolManagerActor</h3><p>零资源 Manager Actor，管理 Actor Pool：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"><span class="keyword">import</span> ray</span><br><span class="line"><span class="keyword">from</span> ray.util.scheduling_strategies <span class="keyword">import</span> NodeAffinitySchedulingStrategy</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@ray.remote(<span class="params">num_cpus=<span class="number">0</span>, num_gpus=<span class="number">0</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RayActorPoolManagerActor</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self, node_id, actor_count</span>):</span><br><span class="line">        <span class="comment"># ray.util.actor_pool 不是线程安全的，故使用 asyncio.Queue</span></span><br><span class="line">        <span class="variable language_">self</span>.idle_actors = asyncio.Queue(maxsize=actor_count)</span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(actor_count):</span><br><span class="line">            name = <span class="string">f&quot;Actor_<span class="subst">&#123;node_id&#125;</span>_<span class="subst">&#123;i&#125;</span>&quot;</span></span><br><span class="line">            actor = RayActor.options(</span><br><span class="line">                name=name,</span><br><span class="line">                namespace=<span class="string">&quot;global&quot;</span>,</span><br><span class="line">                get_if_exists=<span class="literal">True</span>,</span><br><span class="line">                lifetime=<span class="string">&quot;detached&quot;</span>,</span><br><span class="line">                scheduling_strategy=NodeAffinitySchedulingStrategy(node_id=node_id, soft=<span class="literal">False</span>),</span><br><span class="line">            ).remote()</span><br><span class="line">            <span class="variable language_">self</span>.idle_actors.put_nowait(actor)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, analyze_item_dict: <span class="built_in">dict</span>, previous_result</span>):</span><br><span class="line">        actor = <span class="keyword">await</span> <span class="variable language_">self</span>.idle_actors.get()  <span class="comment"># 没空闲 Actor 时自动阻塞等待</span></span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            <span class="comment"># 真正的并行：多个 run.remote 同时在不同的 Actor 上运行</span></span><br><span class="line">            result = <span class="keyword">await</span> actor.run.remote(analyze_item_dict, previous_result)</span><br><span class="line">            <span class="keyword">return</span> result</span><br><span class="line">        <span class="keyword">finally</span>:</span><br><span class="line">            <span class="variable language_">self</span>.idle_actors.put_nowait(actor)  <span class="comment"># 任务完成，归还 Actor</span></span><br></pre></td></tr></table></figure>
+
+<p>关键点：</p>
+<ul>
+<li><code>num_cpus=0, num_gpus=0</code>：不占用计算资源，纯调度角色</li>
+<li><code>asyncio.Queue</code>：线程安全的队列，满载时自动阻塞</li>
+<li><code>NodeAffinitySchedulingStrategy(soft=False)</code>：硬绑定到指定节点</li>
+<li><code>lifetime=&quot;detached&quot;</code>：Actor 持久存活，跨任务复用</li>
+</ul>
+<h3 id="2、RayActor"><a href="#2、RayActor" class="headerlink" title="2、RayActor"></a>2、RayActor</h3><p>GPU Worker Actor，预加载模型：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ray.remote(<span class="params">num_gpus=<span class="number">1</span>, num_cpus=<span class="number">1</span></span>)</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">RayActor</span>:</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="comment"># 预加载模型，实现预热（约 30 秒）</span></span><br><span class="line">        <span class="keyword">from</span> utils.sherpautils <span class="keyword">import</span> SherpaUtils</span><br><span class="line">        <span class="keyword">from</span> utils.minicpmutils <span class="keyword">import</span> MiniCPMUtils</span><br><span class="line">        <span class="keyword">import</span> config</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.sherpa_utils = SherpaUtils(config.models_dir, config.asr_model_type)</span><br><span class="line">        <span class="variable language_">self</span>.minicpm_utils = MiniCPMUtils(config.models_dir)</span><br><span class="line"></span><br><span class="line">        node_ip = ray.util.get_node_ip_address()</span><br><span class="line">        node_id = ray.get_runtime_context().get_node_id()</span><br><span class="line">        gpu_ids = ray.get_gpu_ids()</span><br><span class="line"></span><br><span class="line">        <span class="variable language_">self</span>.logger.info(<span class="string">f&quot;✅ Actor initialized on node <span class="subst">&#123;node_id[:<span class="number">6</span>]&#125;</span> (<span class="subst">&#123;node_ip&#125;</span>), GPU: <span class="subst">&#123;gpu_ids&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">run</span>(<span class="params">self, analyze_item_dict: <span class="built_in">dict</span>, previous_result</span>):</span><br><span class="line">        <span class="comment"># 执行 GPU 任务：说话人分离、ASR、视频分析</span></span><br><span class="line">        analyze_item = AnalyzeItem(**analyze_item_dict)</span><br><span class="line">        report_generator = ReportGenerator(analyze_item)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># Do something</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;success&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>关键点：</p>
+<ul>
+<li><code>num_gpus=1</code>：每个 Actor 独占一个 GPU</li>
+<li><strong>模型预热</strong>：<code>__init__</code> 中加载模型，避免每次任务重新加载</li>
+<li>Actor 数量 &#x3D; GPU 数量，不超卖资源</li>
+</ul>
+<h3 id="3、初始化-Actor-Pool"><a href="#3、初始化-Actor-Pool" class="headerlink" title="3、初始化 Actor Pool"></a>3、初始化 Actor Pool</h3><p>每个节点运行一次：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">create_ray_actor_pool_manager</span>(<span class="params">total_num_gpus=<span class="literal">None</span></span>):</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="keyword">with</span> ray.init(address=<span class="string">&quot;auto&quot;</span>):</span><br><span class="line">            node_id = ray.get_runtime_context().get_node_id()</span><br><span class="line"></span><br><span class="line">            <span class="comment"># 自动检测本节点 GPU 数量</span></span><br><span class="line">            <span class="keyword">if</span> total_num_gpus <span class="keyword">is</span> <span class="literal">None</span>:</span><br><span class="line">                <span class="keyword">for</span> node <span class="keyword">in</span> ray.nodes():</span><br><span class="line">                    <span class="keyword">if</span> node[<span class="string">&quot;NodeID&quot;</span>] == node_id:</span><br><span class="line">                        total_num_gpus = <span class="built_in">int</span>(node.get(<span class="string">&quot;Resources&quot;</span>, &#123;&#125;).get(<span class="string">&quot;GPU&quot;</span>, <span class="number">0</span>))</span><br><span class="line">                        <span class="keyword">break</span></span><br><span class="line">            <span class="keyword">if</span> total_num_gpus &lt; <span class="number">1</span>:</span><br><span class="line">                <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">            actor_count = total_num_gpus  <span class="comment"># Actor 数 = GPU 数</span></span><br><span class="line">            name = <span class="string">f&quot;RayActorPoolManagerActor_<span class="subst">&#123;node_id&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">            RayActorPoolManagerActor.options(</span><br><span class="line">                name=name,</span><br><span class="line">                namespace=<span class="string">&quot;global&quot;</span>,</span><br><span class="line">                get_if_exists=<span class="literal">True</span>,</span><br><span class="line">                lifetime=<span class="string">&quot;detached&quot;</span>,</span><br><span class="line">                max_concurrency=<span class="number">1000</span>,  <span class="comment"># 允许大量并发请求排队</span></span><br><span class="line">                scheduling_strategy=NodeAffinitySchedulingStrategy(node_id=node_id, soft=<span class="literal">False</span>),</span><br><span class="line">            ).remote(node_id, actor_count)</span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;❌ Failed to create Ray Actor Pool Manager: <span class="subst">&#123;e&#125;</span>&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    create_ray_actor_pool_manager()</span><br></pre></td></tr></table></figure>
+
+<p>关键点：</p>
+<ul>
+<li><code>get_if_exists=True</code>：允许重复调用不报错</li>
+<li><code>max_concurrency=1000</code>：允许大量请求排队</li>
+<li>Manager 名字包含 <code>node_id</code>，实现节点级隔离</li>
+</ul>
+<h3 id="4、Pipeline-调度"><a href="#4、Pipeline-调度" class="headerlink" title="4、Pipeline 调度"></a>4、Pipeline 调度</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@ray.remote(<span class="params">max_retries=<span class="number">0</span>, num_gpus=<span class="number">0</span>, scheduling_strategy=<span class="string">&quot;SPREAD&quot;</span>, resources=&#123;</span></span></span><br><span class="line"><span class="params"><span class="meta">    <span class="string">&quot;step_a_slot&quot;</span>: <span class="number">1</span></span></span></span><br><span class="line"><span class="params"><span class="meta">&#125;</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">step_a</span>(<span class="params">analyze_item_dict: <span class="built_in">dict</span></span>):</span><br><span class="line">    <span class="comment"># 下载视频/音频</span></span><br><span class="line">    node_id = ray.get_runtime_context().get_node_id()</span><br><span class="line">    report_generator = create_report_generator(analyze_item_dict)</span><br><span class="line"></span><br><span class="line">    report_generator.clear_cache()</span><br><span class="line">    asyncio.run(report_generator.step_1_download())</span><br><span class="line">    report_generator.step_2_download()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> node_id  <span class="comment"># 返回 node_id 供后续绑定</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@ray.remote(<span class="params">max_retries=<span class="number">0</span>, num_gpus=<span class="number">0</span>, resources=&#123;</span></span></span><br><span class="line"><span class="params"><span class="meta">    <span class="string">&quot;step_d_slot&quot;</span>: <span class="number">1</span>  <span class="comment"># 只有 Head 节点有此资源</span></span></span></span><br><span class="line"><span class="params"><span class="meta">&#125;</span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">step_d</span>(<span class="params">analyze_item_dict: <span class="built_in">dict</span>, step_c_result</span>):</span><br><span class="line">    <span class="comment"># 生成报告并回调</span></span><br><span class="line">    report_generator = create_report_generator(analyze_item_dict)</span><br><span class="line">    llm_content = report_generator.step_7_generate_report()</span><br><span class="line">    <span class="comment"># Callback...</span></span><br><span class="line">    requests.post(analyze_item.callback_url, json=callback_data, timeout=<span class="number">30</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">start_pipeline</span>(<span class="params">analyze_item_dict: <span class="built_in">dict</span></span>):</span><br><span class="line">    <span class="comment"># 串联执行，保证依赖顺序</span></span><br><span class="line">    step_a_result = ray.get(step_a.remote(analyze_item_dict))</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 根据 node_id 找到对应节点的 Actor Pool</span></span><br><span class="line">    manager_name = <span class="string">f&quot;RayActorPoolManagerActor_<span class="subst">&#123;step_a_result&#125;</span>&quot;</span></span><br><span class="line">    manager = ray.get_actor(manager_name, namespace=<span class="string">&quot;global&quot;</span>)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># step_b 自动调度到 step_a 所在节点</span></span><br><span class="line">    step_b_result = manager.run.remote(analyze_item_dict, step_a_result)</span><br><span class="line"></span><br><span class="line">    step_c_result = step_c.remote(analyze_item_dict, step_b_result)</span><br><span class="line">    step_d_result = step_d.remote(analyze_item_dict, step_c_result)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 显式调用 ray.get 以触发异常，供上层 Celery 重试</span></span><br><span class="line">    ray.get(step_d_result)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5、启动-Ray-集群"><a href="#5、启动-Ray-集群" class="headerlink" title="5、启动 Ray 集群"></a>5、启动 Ray 集群</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Head 节点</span></span><br><span class="line">ray start --<span class="built_in">head</span> --port=6379 --dashboard-port=8265 \</span><br><span class="line">    --num-cpus=16 --num-gpus=4 \</span><br><span class="line">    --resources=<span class="string">&#x27;&#123;&quot;step_a_slot&quot;: 4, &quot;step_d_slot&quot;: 1000&#125;&#x27;</span> \</span><br><span class="line">    --disable-usage-stats</span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化 Actor Pool</span></span><br><span class="line">python ray_actor.py</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Worker 节点</span></span><br><span class="line">ray start --address=<span class="string">&#x27;192.168.10.117:6379&#x27;</span> \</span><br><span class="line">    --num-cpus=16 --num-gpus=4 \</span><br><span class="line">    --resources=<span class="string">&#x27;&#123;&quot;step_a_slot&quot;: 4&#125;&#x27;</span>  <span class="comment"># 没有 step_d_slot</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 初始化 Actor Pool</span></span><br><span class="line">python ray_actor.py</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>step_d_slot</code> 只在 Head 节点配置，确保回调只从 Head 发出。</p>
+</blockquote>
+<h3 id="6、日志示例"><a href="#6、日志示例" class="headerlink" title="6、日志示例"></a>6、日志示例</h3><p>Actor 初始化日志：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(RayActor pid=82717) ✅ Actor initialized on node 38ad38 (127.0.0.1), GPU: [0]</span><br><span class="line">(RayActor pid=82718) ✅ Actor initialized on node 38ad38 (127.0.0.1), GPU: [1]</span><br><span class="line">(RayActor pid=82719) ✅ Actor initialized on node 38ad38 (127.0.0.1), GPU: [2]</span><br><span class="line">(RayActor pid=82720) ✅ Actor initialized on node 38ad38 (127.0.0.1), GPU: [3]</span><br></pre></td></tr></table></figure>
+
+<p>任务执行日志（模型已预热，无需重新加载）：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">(step_a pid=70715) [task_0] `step_a` Running on node 38ad38 127.0.0.1, GPUs: []</span><br><span class="line">(RayActor pid=82717) [Step B/task_0] Running on node 38ad38 (127.0.0.1), GPUs: [0]</span><br><span class="line">(step_c pid=70715) [task_0] `step_c` Running on node 38ad38 127.0.0.1, GPUs: []</span><br><span class="line">(step_d pid=70715) [task_0] `step_d` Running on node 38ad38 127.0.0.1, GPUs: []</span><br></pre></td></tr></table></figure>
+
+<h2 id="四、对比-node-IP-资源绑定方案"><a href="#四、对比-node-IP-资源绑定方案" class="headerlink" title="四、对比 node:IP 资源绑定方案"></a>四、对比 node:IP 资源绑定方案</h2><table>
+<thead>
+<tr>
+<th>特性</th>
+<th>node:IP 资源</th>
+<th>NodeAffinity + Actor Pool</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>数据本地性</strong></td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>模型预热</strong></td>
+<td>❌ 每次重新加载 ~30s</td>
+<td>✅ 初始化时加载一次</td>
+</tr>
+<tr>
+<td><strong>Actor 复用</strong></td>
+<td>❌</td>
+<td>✅ 持久存活</td>
+</tr>
+<tr>
+<td><strong>排队机制</strong></td>
+<td>需自己实现</td>
+<td>✅ asyncio.Queue 自动处理</td>
+</tr>
+<tr>
+<td><strong>调度灵活性</strong></td>
+<td>⭐⭐</td>
+<td>⭐⭐⭐⭐</td>
+</tr>
+</tbody></table>
+<p>上一篇文章的方案适合简单场景，Actor Pool 方案适合高频、长期运行的生产环境。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><p><a target="_blank" rel="noopener" href="https://docs.ray.io/">Ray 官方文档</a><br><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/actors.html">Ray: Actors</a><br><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/scheduling/index.html#nodeaffinityschedulingstrategy">Ray: NodeAffinitySchedulingStrategy</a><br><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/actor-patterns/actor-pool.html">Ray: ray.util.actor_pool</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Python/" rel="tag"># Python</a>
+              <a href="/tags/Ray/" rel="tag"># Ray</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/04/11/ohmyzsh-ys-theme-customization-inline-conda-environment-integration/" rel="prev" title="ohmyzsh ys 主题：将 Conda 环境名集成入行内">
+                  <i class="fa fa-angle-left"></i> ohmyzsh ys 主题：将 Conda 环境名集成入行内
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Alby</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/albyho" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

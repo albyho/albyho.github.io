@@ -142,7 +142,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">59</span>
+          <span class="site-state-item-count">60</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -175,6 +175,98 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2018/10/28/ffmpeg-and-videotoolbox-04/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Alby's blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2018/10/28/ffmpeg-and-videotoolbox-04/" class="post-title-link" itemprop="url">FFmpeg 与 VideoToolBox(4):x264 软编 H.264 和 VideoToolBox 硬编 H.264</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2018-10-28 18:14:15" itemprop="dateCreated datePublished" datetime="2018-10-28T18:14:15+08:00">2018-10-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-05 02:58:35" itemprop="dateModified" datetime="2026-01-05T02:58:35+08:00">2026-01-05</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/FFmpeg/" itemprop="url" rel="index"><span itemprop="name">FFmpeg</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>编码从数据结构上看，是将 <code>AVFrame</code> 转换为 <code>AVPacket</code> 的过程。如何构建 AVFrame，以及获取到 AVPacket 后续要进行什么操作，严格来说并不是编码的步骤。<br><code>x264</code> 是作为一个插件编译入 <code>FFmpeg</code> 的。 FFmpeg 对 <code>VideoToolBox</code> 也做了适配。单独使用 <code>x264</code> 或 <code>VideoToolBox</code> 也可以进行编码，本文主要关注通过 FFmpeg 相关 API 进行 <code>H.264</code> 编码。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2018/10/28/ffmpeg-and-videotoolbox-04/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -985,98 +1077,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2017/08/20/libuv-analysis-09/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2017/08/20/libuv-analysis-08/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar200x200.png">
-      <meta itemprop="name" content="Alby">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Alby's blog">
-      <meta itemprop="description" content="Catch.">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | Alby's blog">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2017/08/20/libuv-analysis-08/" class="post-title-link" itemprop="url">Libuv 源码分析(8):I/O ( 或 event ) 循环的运行</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2017-08-20 11:30:18" itemprop="dateCreated datePublished" datetime="2017-08-20T11:30:18+08:00">2017-08-20</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-05 02:58:35" itemprop="dateModified" datetime="2026-01-05T02:58:35+08:00">2026-01-05</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Code Reading</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>Libuv 官方文档( <a target="_blank" rel="noopener" href="https://github.com/libuv/libuv/tree/v1.x/docs">https://github.com/libuv/libuv/tree/v1.x/docs</a> )和 uvbook ( <a target="_blank" rel="noopener" href="http://nikhilm.github.com/uvbook/">http://nikhilm.github.com/uvbook/</a> ) 对 I&#x2F;O ( event ) 循环有比较详细的介绍。<br>本文首先摘抄&#x2F;抄袭了网络上对官方文档关于 I&#x2F;O( event ) 描述的翻译，并做了必要的补充。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2017/08/20/libuv-analysis-08/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
