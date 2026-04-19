@@ -56,6 +56,8 @@
 
   
 
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
 
 
 
@@ -255,7 +257,11 @@
 <span id="more"></span>
 
 <h2 id="二、AbpApplication"><a href="#二、AbpApplication" class="headerlink" title="二、AbpApplication"></a>二、AbpApplication</h2><p>这里的 <code>Application</code> 并非领域驱动设计( <code>DDD</code> )的应用程序层。Abp 是一个框架，运行于 .Net Core 之上；<code>AbpApplication</code> 是一个应用，运行于 Abp 之上 。AbpApplication 主要负责模块的加载和卸载。<br>从代码上看，Application 是实现了 <code>IAbpApplication</code> 接口的类，有三个实现了 IAbpApplication 接口的类，继承关系见下图。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">graph BT</span><br><span class="line">D[AbpApplicationWithExternalServiceProvider] --&gt; C[AbpApplicationBase]</span><br><span class="line">E[AbpApplicationWithInternalServiceProvider] --&gt; C[AbpApplicationBase]</span><br><span class="line">C --&gt; B[IAbpApplication]</span><br><span class="line">B --&gt; A[IModuleContainer]</span><br></pre></td></tr></table></figure>
+<pre class="mermaid">graph BT
+D[AbpApplicationWithExternalServiceProvider] --> C[AbpApplicationBase]
+E[AbpApplicationWithInternalServiceProvider] --> C[AbpApplicationBase]
+C --> B[IAbpApplication]
+B --> A[IModuleContainer]</pre>
 
 <p><code>AbpApplicationBase</code> 是抽象类。<br><code>AbpApplicationWithExternalServiceProvider</code> 一般用于 <code>AspNetCore</code> 应用，使用 AspNetCore 的 service collection 创建 service provider；而 <code>AbpApplicationWithInternalServiceProvider</code> 一般用于其他应用，使用自建的 service collection 创建 service provider 。<br>另外，<code>IAbpApplication</code> 接口继承了 <code>IModuleContainer</code> 接口，后者定义了一个 <code>IAbpModuleDescriptor</code> 元素的只读集合。</p>
 <h2 id="三、IModuleContainer-和-IAbpModuleDescriptor"><a href="#三、IModuleContainer-和-IAbpModuleDescriptor" class="headerlink" title="三、IModuleContainer 和 IAbpModuleDescriptor"></a>三、IModuleContainer 和 IAbpModuleDescriptor</h2><figure class="highlight c#"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// File: src\Volo.Abp.Core\Volo\Abp\Modularity\IModuleContainer.cs</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Volo.Abp.Modularity</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">interface</span> <span class="title">IModuleContainer</span></span><br><span class="line">    &#123;</span><br><span class="line">        [<span class="meta">NotNull</span>]</span><br><span class="line">        IReadOnlyList&lt;IAbpModuleDescriptor&gt; Modules &#123; <span class="keyword">get</span>; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// File: src\Volo.Abp.Core\Volo\Abp\Modularity\IAbpModuleDescriptor.cs</span></span><br><span class="line"><span class="keyword">namespace</span> <span class="title">Volo.Abp.Modularity</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">interface</span> <span class="title">IAbpModuleDescriptor</span></span><br><span class="line">    &#123;</span><br><span class="line">        Type Type &#123; <span class="keyword">get</span>; &#125;</span><br><span class="line"></span><br><span class="line">        Assembly Assembly &#123; <span class="keyword">get</span>; &#125;</span><br><span class="line"></span><br><span class="line">        IAbpModule Instance &#123; <span class="keyword">get</span>; &#125;</span><br><span class="line"></span><br><span class="line">        <span class="built_in">bool</span> IsLoadedAsPlugIn &#123; <span class="keyword">get</span>; &#125;</span><br><span class="line"></span><br><span class="line">        IReadOnlyList&lt;IAbpModuleDescriptor&gt; Dependencies &#123; <span class="keyword">get</span>; &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -284,7 +290,7 @@
 <li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/myzony/p/10722506.html">https://www.cnblogs.com/myzony/p/10722506.html</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.autofac.org/en/latest/integration/aspnetcore.html#asp-net-core-3-0-and-generic-hosting">https://docs.autofac.org/en/latest/integration/aspnetcore.html#asp-net-core-3-0-and-generic-hosting</a></li>
 </ul>
-
+<script type="module"> import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';	mermaid.initialize({startOnLoad: true, flowchart: {curve: 'linear'}}); </script>
     </div>
 
     

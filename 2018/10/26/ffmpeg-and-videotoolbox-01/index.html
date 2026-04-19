@@ -63,6 +63,8 @@
 
   
 
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
 
 
 
@@ -283,7 +285,7 @@
 <p><img src="/postimages/ffmpeg-and-videotoolbox-01/01.png" alt="01"></p>
 <center>原始 mp4 文件信息</center>
 
-<p>视频文件的音视频的编码分别是 <code>AAC</code> (LC) 和 <code>AVC</code> (<a href="mailto:&#x4d;&#x61;&#x69;&#x6e;&#64;&#x4c;&#x33;&#x2e;&#x31;">&#x4d;&#x61;&#x69;&#x6e;&#64;&#x4c;&#x33;&#x2e;&#x31;</a>) 。<br>当然，也可以直接使用 <code>ffprobe</code> 命令查看信息：</p>
+<p>视频文件的音视频的编码分别是 <code>AAC</code> (LC) 和 <code>AVC</code> (<a href="mailto:&#x4d;&#x61;&#x69;&#x6e;&#64;&#76;&#x33;&#x2e;&#x31;">&#x4d;&#x61;&#x69;&#x6e;&#64;&#76;&#x33;&#x2e;&#x31;</a>) 。<br>当然，也可以直接使用 <code>ffprobe</code> 命令查看信息：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ffprobe -show_format 503_hd_introducing_heif_and_hevc.mp4</span><br></pre></td></tr></table></figure>
 
 <h3 id="2、裁剪-mp4-文件"><a href="#2、裁剪-mp4-文件" class="headerlink" title="2、裁剪 mp4 文件"></a>2、裁剪 mp4 文件</h3><p>因为在 iOS 上测试，视频文件作为资源文件，希望小一点，从第10秒开始截取20秒，其余不变：</p>

@@ -57,6 +57,8 @@
 
   
 
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
 
 
 
@@ -418,7 +420,24 @@
 </ul>
 <h2 id="四、调度链路"><a href="#四、调度链路" class="headerlink" title="四、调度链路"></a>四、调度链路</h2><p>这里的关键不是“把所有步骤都绑定到同一节点”，而是只把真正依赖本地文件的步骤绑定回下载节点对应的热池。</p>
 <p>先看一张简化后的时序图：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">sequenceDiagram</span><br><span class="line">    participant P as Pipeline</span><br><span class="line">    participant A as step_a</span><br><span class="line">    participant M as Manager Actor</span><br><span class="line">    participant B as RayActor(step_b)</span><br><span class="line">    participant L as step_c</span><br><span class="line">    participant D as step_d</span><br><span class="line"></span><br><span class="line">    P-&gt;&gt;A: 提交任务</span><br><span class="line">    A-&gt;&gt;A: 下载音频/视频到本地</span><br><span class="line">    A--&gt;&gt;P: 返回 node_id</span><br><span class="line">    P-&gt;&gt;M: 根据 node_id 获取对应节点的热池</span><br><span class="line">    M-&gt;&gt;B: 分配一个空闲 GPU Actor</span><br><span class="line">    B-&gt;&gt;B: 说话人分离 / ASR / 视频分析</span><br><span class="line">    B--&gt;&gt;P: step_b 完成</span><br><span class="line">    P-&gt;&gt;L: 调用 LLM</span><br><span class="line">    L--&gt;&gt;P: 返回 model_output</span><br><span class="line">    P-&gt;&gt;D: 生成报告并回调</span><br></pre></td></tr></table></figure>
+<pre class="mermaid">sequenceDiagram
+    participant P as Pipeline
+    participant A as step_a
+    participant M as Manager Actor
+    participant B as RayActor(step_b)
+    participant L as step_c
+    participant D as step_d
+
+    P->>A: 提交任务
+    A->>A: 下载音频/视频到本地
+    A-->>P: 返回 node_id
+    P->>M: 根据 node_id 获取对应节点的热池
+    M->>B: 分配一个空闲 GPU Actor
+    B->>B: 说话人分离 / ASR / 视频分析
+    B-->>P: step_b 完成
+    P->>L: 调用 LLM
+    L-->>P: 返回 model_output
+    P->>D: 生成报告并回调</pre>
 
 <p>当前项目里，核心链路是这样的：</p>
 <figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">step_a → 返回 node_id → 根据 node_id 找到 Manager → Manager.run() → step_b</span><br></pre></td></tr></table></figure>
@@ -600,7 +619,7 @@
 <li><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/scheduling/index.html#nodeaffinityschedulingstrategy">Ray: NodeAffinitySchedulingStrategy</a></li>
 <li><a target="_blank" rel="noopener" href="https://docs.ray.io/en/latest/ray-core/actor-patterns/actor-pool.html">Ray: ray.util.actor_pool</a></li>
 </ul>
-
+<script type="module"> import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';	mermaid.initialize({startOnLoad: true, flowchart: {curve: 'linear'}}); </script>
     </div>
 
     
