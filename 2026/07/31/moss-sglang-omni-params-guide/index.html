@@ -28,7 +28,7 @@
 <meta property="og:description" content="**类型:Explanation(理解导向)**。本文解释 temperature、mem-fraction-static、max_new_tokens 三个参数为何影响转写质量、显存占用与可支持音频时长,帮助你在遇到重复退化、OOM 或输出截断时做出正确的调参决策。 本文只讨论上述三个参数;top_p、top_k 等其他采样参数不在讨论范围内。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-07-31T05:14:44.000Z">
-<meta property="article:modified_time" content="2026-07-31T08:18:55.514Z">
+<meta property="article:modified_time" content="2026-07-31T18:17:13.925Z">
 <meta property="article:author" content="Alby">
 <meta property="article:tag" content="MOSS-Transcribe-Diarize">
 <meta property="article:tag" content="SGLang-Omni">
@@ -225,9 +225,15 @@
         <i class="far fa-calendar"></i>
       </span>
       <span class="post-meta-item-text">发表于</span>
-      
 
-      <time title="创建时间：2026-07-31 13:14:44 / 修改时间：16:18:55" itemprop="dateCreated datePublished" datetime="2026-07-31T13:14:44+08:00">2026-07-31</time>
+      <time title="创建时间：2026-07-31 13:14:44" itemprop="dateCreated datePublished" datetime="2026-07-31T13:14:44+08:00">2026-07-31</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-08-01 02:17:13" itemprop="dateModified" datetime="2026-08-01T02:17:13+08:00">2026-08-01</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -410,7 +416,7 @@
 </tbody></table>
 <p>退化消除(610 段,接近 5080 Laptop 的 623 正常水平),单字循环消失,且<strong>更快</strong>(少解码了约 180 个退化小段)。</p>
 <p><strong>代价</strong>:采样引入非确定性,输出不再逐字可复现(temp&#x3D;0.1 下两轮差 1 段,610 vs 611,近似稳定)。若需完全确定性,可设 <code>temperature=0</code>(但在 4090D 等卡上会退化),或改用 <code>repetition_penalty</code>(见下)。</p>
-<h3 id="备注-接口限制"><a href="#备注-接口限制" class="headerlink" title="备注:接口限制"></a>备注:接口限制</h3><p>转录接口 <code>/v1/audio/transcriptions</code> 当前只暴露 <code>temperature</code> 与 <code>max_new_tokens</code> 两个请求参数,<strong>不接受</strong> <code>repetition_penalty</code> &#x2F; <code>top_p</code> &#x2F; <code>top_k</code>(那些在 chat 接口)。因此目前只能用 temperature 缓解退化;若要”贪心 + 重复惩罚”兼顾确定性与质量,需 patch 转录接口透传 <code>repetition_penalty</code>(底层 <code>SamplingParams</code> 已支持)。</p>
+<h3 id="备注-接口限制"><a href="#备注-接口限制" class="headerlink" title="备注:接口限制"></a>备注:接口限制</h3><p>转录接口 <code>/v1/audio/transcriptions</code> <strong>不接受</strong> <code>repetition_penalty</code> 参数， <code>top_p</code> &#x2F; <code>top_k</code> 暂时不在讨论范围内。因此目前使用 temperature 缓解退化;若要”贪心 + 重复惩罚”兼顾确定性与质量, 可能需要 patch 转录接口透传 <code>repetition_penalty</code>(底层 <code>SamplingParams</code> 已支持)。</p>
 <h2 id="5-三参数的相互作用"><a href="#5-三参数的相互作用" class="headerlink" title="5. 三参数的相互作用"></a>5. 三参数的相互作用</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mem-fraction-static  ──-&gt;  kv_capacity  ──-&gt;  限制 input + max_new_tokens 之和</span><br><span class="line">                                         (决定支持多长音频 / 是否 OOM)</span><br><span class="line"></span><br><span class="line">max_new_tokens  ──-&gt;  解码输出上限</span><br><span class="line">                     (须与 input 之和 ≤ kv_capacity)</span><br><span class="line"></span><br><span class="line">temperature  ──-&gt;  采样质量 / 是否重复退化</span><br><span class="line">                 (与显存、容量无关,独立作用于同一段解码)</span><br></pre></td></tr></table></figure>
 
 <ul>
