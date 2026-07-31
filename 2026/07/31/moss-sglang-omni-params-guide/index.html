@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css" integrity="sha256-VHqXKFhhMxcpubYf9xiWdCiojEbY9NexQ4jh8AxbvcM=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.tubumu.com","root":"/","images":"/images","scheme":"Muse","darkmode":true,"version":"8.27.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"always","padding":18,"offset":12},"hljswrap":true,"codeblock":{"theme":{"light":"default","dark":"stackoverflow-dark"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js" defer></script>
+
+    <meta name="description" content="**类型:Explanation(理解导向)**。本文解释 temperature、mem-fraction-static、max_new_tokens 三个参数为何影响转写质量、显存占用与可支持音频时长,帮助你在遇到重复退化、OOM 或输出截断时做出正确的调参决策。 本文只讨论上述三个参数;top_p、top_k 等其他采样参数不在讨论范围内。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MOSS-Transcribe-Diarize + SGLang-Omni 推理方案:显存与解码参数详解">
+<meta property="og:url" content="http://blog.tubumu.com/2026/07/31/moss-sglang-omni-params-guide/index.html">
+<meta property="og:site_name" content="Alby&#39;s blog">
+<meta property="og:description" content="**类型:Explanation(理解导向)**。本文解释 temperature、mem-fraction-static、max_new_tokens 三个参数为何影响转写质量、显存占用与可支持音频时长,帮助你在遇到重复退化、OOM 或输出截断时做出正确的调参决策。 本文只讨论上述三个参数;top_p、top_k 等其他采样参数不在讨论范围内。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-07-31T05:14:44.000Z">
+<meta property="article:modified_time" content="2026-07-31T05:21:06.188Z">
+<meta property="article:author" content="Alby">
+<meta property="article:tag" content="MOSS-Transcribe-Diarize">
+<meta property="article:tag" content="SGLang-Omni">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://blog.tubumu.com/2026/07/31/moss-sglang-omni-params-guide/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://blog.tubumu.com/2026/07/31/moss-sglang-omni-params-guide/","path":"2026/07/31/moss-sglang-omni-params-guide/","title":"MOSS-Transcribe-Diarize + SGLang-Omni 推理方案:显存与解码参数详解"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>MOSS-Transcribe-Diarize + SGLang-Omni 推理方案:显存与解码参数详解 | Alby's blog</title>
+  
+
+
+
+
+
+
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
+<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
+
+  
+
+  <script class="next-config" data-name="mermaid" type="application/json">{"enable":true,"theme":{"light":"default","dark":"dark"},"js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.10.1/mermaid.min.js","integrity":"sha256-BmQmdWDS8X2OTbrwELWK366LV6escyWhHHe0XCTU/Hk="}}</script>
+  <script src="/js/third-party/tags/mermaid.js" defer></script>
+
+
+
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">false</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js" defer></script>
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Alby's blog</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">世上没有巧合，只有巧合的假象。</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%A6%82%E8%BF%B0-%E4%B8%89%E4%B8%AA%E5%8F%82%E6%95%B0%E5%90%84%E7%AE%A1%E4%BB%80%E4%B9%88"><span class="nav-number">1.</span> <span class="nav-text">1. 概述:三个参数各管什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-mem-fraction-static-%E9%9D%99%E6%80%81-KV-pool-%E4%B8%8E%E6%98%BE%E5%AD%98%E6%9D%83%E8%A1%A1"><span class="nav-number">2.</span> <span class="nav-text">2. mem-fraction-static:静态 KV pool 与显存权衡</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%BA%E5%88%B6"><span class="nav-number">2.1.</span> <span class="nav-text">机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#KV-%E5%AE%B9%E9%87%8F%E5%85%AC%E5%BC%8F"><span class="nav-number">2.2.</span> <span class="nav-text">KV 容量公式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#16G-24G-%E5%8F%96%E5%80%BC"><span class="nav-number">2.3.</span> <span class="nav-text">16G &#x2F; 24G 取值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-24G-%E4%B8%8D%E8%83%BD%E7%94%A8-0-80"><span class="nav-number">2.4.</span> <span class="nav-text">为什么 24G 不能用 0.80</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mem-fraction-static-%E4%B8%8D%E5%BD%B1%E5%93%8D%E8%A7%A3%E7%A0%81%E9%80%9F%E5%BA%A6"><span class="nav-number">2.5.</span> <span class="nav-text">mem-fraction-static 不影响解码速度</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-max-new-tokens-%E8%BE%93%E5%87%BA%E4%B8%8A%E9%99%90%E4%B8%8E-KV-%E5%AE%B9%E9%87%8F%E7%BA%A6%E6%9D%9F"><span class="nav-number">3.</span> <span class="nav-text">3. max_new_tokens:输出上限与 KV 容量约束</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%9C%E7%94%A8"><span class="nav-number">3.1.</span> <span class="nav-text">作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BA%A6%E6%9D%9F-input-max-new-%E2%89%A4-kv-capacity"><span class="nav-number">3.2.</span> <span class="nav-text">约束:input + max_new ≤ kv_capacity</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8E-mem-fraction-static-%E7%9A%84%E8%80%A6%E5%90%88"><span class="nav-number">3.3.</span> <span class="nav-text">与 mem-fraction-static 的耦合</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-temperature-%E8%B4%AA%E5%BF%83%E8%A7%A3%E7%A0%81%E4%B8%8E%E9%87%8D%E5%A4%8D%E9%80%80%E5%8C%96"><span class="nav-number">4.</span> <span class="nav-text">4. temperature:贪心解码与重复退化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B4%AA%E5%BF%83%E8%A7%A3%E7%A0%81%E7%9A%84%E7%A1%AE%E5%AE%9A%E6%80%A7"><span class="nav-number">4.1.</span> <span class="nav-text">贪心解码的确定性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4090D-%E4%B8%8A%E7%9A%84%E9%87%8D%E5%A4%8D%E9%80%80%E5%8C%96"><span class="nav-number">4.2.</span> <span class="nav-text">4090D 上的重复退化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#temperature-0-1-%E7%9A%84%E4%BF%AE%E5%A4%8D"><span class="nav-number">4.3.</span> <span class="nav-text">temperature&#x3D;0.1 的修复</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%87%E6%B3%A8-%E6%8E%A5%E5%8F%A3%E9%99%90%E5%88%B6"><span class="nav-number">4.4.</span> <span class="nav-text">备注:接口限制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E4%B8%89%E5%8F%82%E6%95%B0%E7%9A%84%E7%9B%B8%E4%BA%92%E4%BD%9C%E7%94%A8"><span class="nav-number">5.</span> <span class="nav-text">5. 三参数的相互作用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%8F%82%E5%86%B3%E7%AD%96%E8%A1%A8"><span class="nav-number">5.1.</span> <span class="nav-text">调参决策表</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%B0%8F%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">6. 小结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Alby"
+      src="/images/avatar200x200.png">
+  <p class="site-author-name" itemprop="name">Alby</p>
+  <div class="site-description" itemprop="description">Catch.</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">61</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">22</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">32</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/albyho" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;albyho" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2026/07/31/moss-sglang-omni-params-guide/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="MOSS-Transcribe-Diarize + SGLang-Omni 推理方案:显存与解码参数详解 | Alby's blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MOSS-Transcribe-Diarize + SGLang-Omni 推理方案:显存与解码参数详解
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2026-07-31 13:14:44 / 修改时间：13:21:06" itemprop="dateCreated datePublished" datetime="2026-07-31T13:14:44+08:00">2026-07-31</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/MOSS-Transcribe-Diarize/" itemprop="url" rel="index"><span itemprop="name">MOSS-Transcribe-Diarize</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/MOSS-Transcribe-Diarize/SGLang-Omni/" itemprop="url" rel="index"><span itemprop="name">SGLang-Omni</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>**类型:Explanation(理解导向)**。本文解释 <code>temperature</code>、<code>mem-fraction-static</code>、<code>max_new_tokens</code> 三个参数为何影响转写质量、显存占用与可支持音频时长,帮助你在遇到重复退化、OOM 或输出截断时做出正确的调参决策。</p>
+<p>本文只讨论上述三个参数;<code>top_p</code>、<code>top_k</code> 等其他采样参数不在讨论范围内。</p>
+</blockquote>
+<span id="more"></span>
+
+<h2 id="1-概述-三个参数各管什么"><a href="#1-概述-三个参数各管什么" class="headerlink" title="1. 概述:三个参数各管什么"></a>1. 概述:三个参数各管什么</h2><p>MOSS-Transcribe-Diarize(SGLang-Omni 引擎)在解码一段音频时,有三个独立维度的配置参数。按生效层级分两类:</p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>层级</th>
+<th>控制维度</th>
+<th>一句话</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mem-fraction-static</code></td>
+<td><strong>启动参数</strong></td>
+<td>显存 &#x2F; KV 容量</td>
+<td>sglang-omni 启动时预分配多少显存给 KV cache pool,决定能支持多长的音频;改后需重建容器</td>
+</tr>
+<tr>
+<td><code>max_new_tokens</code></td>
+<td><strong>请求参数</strong></td>
+<td>解码输出上限</td>
+<td>单次解码最多生成多少 token,随每次转录请求下发;改即生效,无需重启</td>
+</tr>
+<tr>
+<td><code>temperature</code></td>
+<td><strong>请求参数</strong></td>
+<td>采样质量</td>
+<td>0&#x3D;贪心(argmax);&gt;0 采样,影响输出确定性与重复退化;随请求下发</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>启动参数</strong>(<code>mem-fraction-static</code>)在容器启动时固定,调整需重建服务容器;<strong>请求参数</strong>(<code>max_new_tokens</code>、<code>temperature</code>)由调用方在每次 HTTP 请求里下发,调整即时生效。</p>
+</blockquote>
+<p>三者共同决定三类结果:<strong>转写质量</strong>(<code>temperature</code>)、<strong>是否 OOM</strong>(<code>mem-fraction-static</code> + <code>max_new_tokens</code>)、<strong>支持多长音频</strong>(<code>mem-fraction-static</code> -&gt; KV 容量 -&gt; input + max_new)。其中 <code>mem-fraction-static</code> 与 <code>max_new_tokens</code> 通过”KV 容量”耦合,<code>temperature</code> 则与两者独立(只管采样)。</p>
+<h2 id="2-mem-fraction-static-静态-KV-pool-与显存权衡"><a href="#2-mem-fraction-static-静态-KV-pool-与显存权衡" class="headerlink" title="2. mem-fraction-static:静态 KV pool 与显存权衡"></a>2. mem-fraction-static:静态 KV pool 与显存权衡</h2><h3 id="机制"><a href="#机制" class="headerlink" title="机制"></a>机制</h3><p>sglang-omni 启动时按 <code>mem-fraction-static × 总显存</code> 预分配一个静态 KV cache pool(模型权重 + KV 池 + 开销),用于存放解码过程的 KV cache。这个 pool 在启动时就占住显存,不随请求变化,因此调它必须重启服务。</p>
+<h3 id="KV-容量公式"><a href="#KV-容量公式" class="headerlink" title="KV 容量公式"></a>KV 容量公式</h3><p>本模型(Qwen3 解码器:28 层 &#x2F; 8 KV head &#x2F; head_dim 128 &#x2F; bf16):</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">bytes_per_token = 2(K+V) × 28 × 8 × 128 × 2 = 114688 bytes</span><br><span class="line">kv_capacity = (fraction × 总显存GiB − 权重1.6 − 开销1.3) × 1024³ ÷ 114688</span><br></pre></td></tr></table></figure>
+
+<p><code>kv_capacity</code> 是 pool 能容纳的最大 token 数。音频的 input token + 解码 output token 之和必须 ≤ kv_capacity,否则 OOM 或截断。</p>
+<h3 id="16G-24G-取值"><a href="#16G-24G-取值" class="headerlink" title="16G &#x2F; 24G 取值"></a>16G &#x2F; 24G 取值</h3><table>
+<thead>
+<tr>
+<th>显存</th>
+<th>fraction</th>
+<th>kv_capacity</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>16G</td>
+<td>0.80</td>
+<td>≈92766</td>
+<td>本地笔记本(RTX 5080 Laptop GPU)实测可用</td>
+</tr>
+<tr>
+<td>24G</td>
+<td>0.55</td>
+<td>≈96434</td>
+<td>推荐默认(≤60min 音频)</td>
+</tr>
+<tr>
+<td>24G</td>
+<td>0.60</td>
+<td>≈107670</td>
+<td>&gt;60min 才需要</td>
+</tr>
+<tr>
+<td>24G</td>
+<td>0.80</td>
+<td>≈152609</td>
+<td>容量足够,但静态显存占用过大,<strong>可能 OOM</strong>(见下)</td>
+</tr>
+</tbody></table>
+<h3 id="为什么-24G-不能用-0-80"><a href="#为什么-24G-不能用-0-80" class="headerlink" title="为什么 24G 不能用 0.80"></a>为什么 24G 不能用 0.80</h3><p>注意:0.80 在 24G 上的 OOM <strong>不是 KV 容量不足</strong>(容量 ≈152609,绰绰有余),而是<strong>总显存超载</strong>。0.80 × 24 &#x3D; 19.2GB 静态预留,实际 idle 占用约 20.66GB,加上推理动态开销(~5.3GB,推算),峰值可能超过 24GB。</p>
+<p>实测 0.80 在 24G 推理时触发 OOM:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 598.00 MiB.</span><br><span class="line">GPU 0 total 23.52 GiB.</span><br></pre></td></tr></table></figure>
+
+<p>音频编码器(whisper conv1)申请显存时,空闲量不足 -&gt; OOM。降到 0.55 把静态压到约 13.2GB,峰值约 18.5GB,留出余量给动态开销,才放得下。</p>
+<h3 id="mem-fraction-static-不影响解码速度"><a href="#mem-fraction-static-不影响解码速度" class="headerlink" title="mem-fraction-static 不影响解码速度"></a>mem-fraction-static 不影响解码速度</h3><p>实测(24G 卡,50min 音频):0.55 与 0.60 两种取值的单轮耗时完全一致(均 199.9s)。因为 pool 多余的容量不参与解码计算,只要音频”放得下”,pool 大小不影响解码耗时。所以调它是纯粹的”显存 vs 容量”权衡,不以速度为代价。</p>
+<blockquote>
+<p>注:下文峰值显存为按 0.60 实测动态开销(~5.3GB)推算,<strong>仅 50min 音频实测过</strong>,更长音频未实测。</p>
+</blockquote>
+<h2 id="3-max-new-tokens-输出上限与-KV-容量约束"><a href="#3-max-new-tokens-输出上限与-KV-容量约束" class="headerlink" title="3. max_new_tokens:输出上限与 KV 容量约束"></a>3. max_new_tokens:输出上限与 KV 容量约束</h2><h3 id="作用"><a href="#作用" class="headerlink" title="作用"></a>作用</h3><p><code>max_new_tokens</code> 限制单次解码最多生成的 token 数(输出文本上限)。sglang-omni 按此值预留解码空间。它是请求参数,由调用方在每次转录请求里下发。</p>
+<h3 id="约束-input-max-new-≤-kv-capacity"><a href="#约束-input-max-new-≤-kv-capacity" class="headerlink" title="约束:input + max_new ≤ kv_capacity"></a>约束:input + max_new ≤ kv_capacity</h3><p>音频的 input token(与时长线性,约 13.4 token&#x2F;s)加上 <code>max_new_tokens</code> 必须 ≤ kv_capacity(由 <code>mem-fraction-static</code> 决定)。否则要么 OOM(超显存),要么输出被截断。</p>
+<p>50min 测试音频实测:</p>
+<ul>
+<li>input ≈ 40193 token</li>
+<li>output ≈ 19366 token(实际输出,远小于 max_new)</li>
+<li>取 max_new&#x3D;32768:input + max_new &#x3D; 72961,在 16G&#x2F;0.80 的 kv_capacity(92766)内放得下,且 output(19366)&lt; 32768 不截断。</li>
+</ul>
+<p>32768(2^15)作为默认:output 余量足(50min 余 69%),KV 余量足(60min input≈48232,48232+32768&#x3D;81000 &lt; 92766,可支持至约 74min)。更大的 max_new(如 49152)在 60min 会超 kv_capacity(97384 &gt; 92766)可能导致 OOM,故不取。</p>
+<h3 id="与-mem-fraction-static-的耦合"><a href="#与-mem-fraction-static-的耦合" class="headerlink" title="与 mem-fraction-static 的耦合"></a>与 mem-fraction-static 的耦合</h3><p><code>max_new_tokens</code> 能设多大,受 <code>mem-fraction-static</code> 决定的 kv_capacity 限制。fraction 调小 -&gt; kv_capacity 缩小 -&gt; max_new 上限降低 &#x2F; 可支持音频变短。两者通过 kv_capacity 耦合。</p>
+<h2 id="4-temperature-贪心解码与重复退化"><a href="#4-temperature-贪心解码与重复退化" class="headerlink" title="4. temperature:贪心解码与重复退化"></a>4. temperature:贪心解码与重复退化</h2><h3 id="贪心解码的确定性"><a href="#贪心解码的确定性" class="headerlink" title="贪心解码的确定性"></a>贪心解码的确定性</h3><p>转录请求默认 <code>temperature=0.0</code>(贪心,argmax):每步选最高概率 token,输出对同一份 logits 完全确定。实测同一 GPU 上 3 轮转写结果完全一致(段数 623&#x2F;623&#x2F;623 或 793&#x2F;793&#x2F;793)。</p>
+<h3 id="4090D-上的重复退化"><a href="#4090D-上的重复退化" class="headerlink" title="4090D 上的重复退化"></a>4090D 上的重复退化</h3><p>同一份模型权重(md5 一致)、同一份 sglang-omni 代码(hash 一致)、同一 sglang(0.5.12.post1)&#x2F; torch(2.11.0+cu130)&#x2F; CUDA(13.0)版本,在两块不同 GPU 上贪心解码,产出差异巨大:</p>
+<table>
+<thead>
+<tr>
+<th>GPU</th>
+<th>架构</th>
+<th>段数(贪心)</th>
+<th>连续重复段</th>
+<th>最高重复</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>RTX 5080 Laptop GPU(16G)</td>
+<td>Blackwell</td>
+<td>623</td>
+<td>7</td>
+<td>正常口语(最高 ×6)</td>
+</tr>
+<tr>
+<td>4090D(24G)</td>
+<td>Ada</td>
+<td>793</td>
+<td>163</td>
+<td>单字循环 ×102、短语循环 ×49</td>
+</tr>
+</tbody></table>
+<p>4090D 上出现严重的<strong>自回归重复退化</strong>(repetition degeneration):模型卡在单 token&#x2F;短语循环里出不来(如某单字重复 102 次、某短语重复 49 次),段数虚高、质量下降。5080 Laptop 不触发。</p>
+<p><strong>根因</strong>:不同 GPU 架构(Blackwell vs Ada)的 tensor core &#x2F; kernel 实现与累加顺序不同,产生微小但不同的 logits。贪心解码是”蝴蝶效应”过程,微小 logits 差异逐步放大,在 4090D 上把解码器推进重复循环。<strong>本质是模型对长音频的重复退化较为敏感</strong>,5080 Laptop 的数值路径恰好绕开,4090D 的触发。这不是配置或代码错误,而是模型本身的数值不稳定性在不同硬件上的表现差异。</p>
+<h3 id="temperature-0-1-的修复"><a href="#temperature-0-1-的修复" class="headerlink" title="temperature&#x3D;0.1 的修复"></a>temperature&#x3D;0.1 的修复</h3><p>将 <code>temperature</code> 从 0.0 提到 0.1(轻采样),给 logits 加一点随机扰动,让解码器跳出”最高概率锁死”的循环:</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>4090D 贪心(temp&#x3D;0)</th>
+<th>4090D temp&#x3D;0.1</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>段数</td>
+<td>793</td>
+<td>610 &#x2F; 611</td>
+</tr>
+<tr>
+<td>连续重复段</td>
+<td>163</td>
+<td>2</td>
+</tr>
+<tr>
+<td>最高重复</td>
+<td>单字循环 ×102</td>
+<td>正常口语(最高 ×6)</td>
+</tr>
+<tr>
+<td>单轮耗时</td>
+<td>199.9s</td>
+<td>161s</td>
+</tr>
+</tbody></table>
+<p>退化消除(610 段,接近 5080 Laptop 的 623 正常水平),单字循环消失,且<strong>更快</strong>(少解码了约 180 个退化小段)。</p>
+<p><strong>代价</strong>:采样引入非确定性,输出不再逐字可复现(temp&#x3D;0.1 下两轮差 1 段,610 vs 611,近似稳定)。若需完全确定性,可设 <code>temperature=0</code>(但在 4090D 等卡上会退化),或改用 <code>repetition_penalty</code>(见下)。</p>
+<h3 id="备注-接口限制"><a href="#备注-接口限制" class="headerlink" title="备注:接口限制"></a>备注:接口限制</h3><p>转录接口 <code>/v1/audio/transcriptions</code> 当前只暴露 <code>temperature</code> 与 <code>max_new_tokens</code> 两个请求参数,<strong>不接受</strong> <code>repetition_penalty</code> &#x2F; <code>top_p</code> &#x2F; <code>top_k</code>(那些在 chat 接口)。因此目前只能用 temperature 缓解退化;若要”贪心 + 重复惩罚”兼顾确定性与质量,需 patch 转录接口透传 <code>repetition_penalty</code>(底层 <code>SamplingParams</code> 已支持)。</p>
+<h2 id="5-三参数的相互作用"><a href="#5-三参数的相互作用" class="headerlink" title="5. 三参数的相互作用"></a>5. 三参数的相互作用</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mem-fraction-static  ──-&gt;  kv_capacity  ──-&gt;  限制 input + max_new_tokens 之和</span><br><span class="line">                                         (决定支持多长音频 / 是否 OOM)</span><br><span class="line"></span><br><span class="line">max_new_tokens  ──-&gt;  解码输出上限</span><br><span class="line">                     (须与 input 之和 ≤ kv_capacity)</span><br><span class="line"></span><br><span class="line">temperature  ──-&gt;  采样质量 / 是否重复退化</span><br><span class="line">                 (与显存、容量无关,独立作用于同一段解码)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><strong><code>mem-fraction-static</code></strong>(启动参数)决定池子大小 -&gt; 限制 max_new + input 能多大 -&gt; 决定音频时长上限与 OOM 风险;改需重建容器。</li>
+<li><strong><code>max_new_tokens</code></strong>(请求参数)在 fraction 给定的容量内设定输出上限;改即时生效。</li>
+<li><strong><code>temperature</code></strong>(请求参数)独立管采样,不影响显存&#x2F;容量,但影响质量与确定性;改即时生效。</li>
+</ul>
+<h3 id="调参决策表"><a href="#调参决策表" class="headerlink" title="调参决策表"></a>调参决策表</h3><table>
+<thead>
+<tr>
+<th>现象</th>
+<th>调哪个参数</th>
+<th>方向</th>
+<th>生效方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OOM(显存不足)</td>
+<td><code>mem-fraction-static</code></td>
+<td>调小(腾显存);或调小 <code>max_new_tokens</code></td>
+<td>启动参数,需重建容器</td>
+</tr>
+<tr>
+<td>输出被截断(音频没转完)</td>
+<td><code>max_new_tokens</code> &#x2F; <code>mem-fraction-static</code></td>
+<td>调大 max_new(须确保 ≤ kv_capacity);或调大 fraction 增容</td>
+<td>max_new 即时;fraction 需重建</td>
+</tr>
+<tr>
+<td>重复退化(段数虚高、单字循环)</td>
+<td><code>temperature</code></td>
+<td>从 0 提到 0.1</td>
+<td>请求参数,即时</td>
+</tr>
+<tr>
+<td>想要完全确定性</td>
+<td><code>temperature</code></td>
+<td>设 0(注意:某些 GPU 会退化,需权衡)</td>
+<td>即时</td>
+</tr>
+<tr>
+<td>换 GPU 后质量变差</td>
+<td><code>temperature</code></td>
+<td>多半是数值差异触发退化,试 0.1</td>
+<td>即时</td>
+</tr>
+</tbody></table>
+<h2 id="6-小结"><a href="#6-小结" class="headerlink" title="6. 小结"></a>6. 小结</h2><ul>
+<li><strong><code>mem-fraction-static</code></strong>(启动参数):管显存与 KV 容量(音频时长上限)。16G 用 0.80,24G 用 0.55(≤60min)。不影响速度。改需重建容器。</li>
+<li><strong><code>max_new_tokens</code></strong>(请求参数):管解码输出上限。须满足 <code>input + max_new ≤ kv_capacity</code>。默认 32768 覆盖至约 74min。</li>
+<li><strong><code>temperature</code></strong>(请求参数):管采样质量与确定性。0&#x3D;贪心(确定,但 4090D 等卡可能退化);0.1&#x3D;轻采样(消除退化,轻微非确定)。</li>
+</ul>
+<p><strong>决策树</strong>:看到 OOM -&gt; 调 <code>mem-fraction-static</code> &#x2F; <code>max_new_tokens</code>;看到截断 -&gt; 调大 <code>max_new_tokens</code>(守 kv_capacity);看到重复退化 -&gt; 调 <code>temperature</code> 到 0.1。</p>
+<hr>
+<blockquote>
+<p><strong>数据来源</strong>:50min 测试音频在 RTX 5080 Laptop GPU(16G,笔记本,Blackwell)与 RTX 4090D(24G,Ada)上的实测。两机模型权重(md5 <code>092f865a...</code>)、sglang-omni 代码、sglang&#x2F;torch&#x2F;CUDA 版本均一致,唯一变量为 GPU。峰值显存与更长音频的容量为按 KV 容量公式与 0.60 实测动态开销(~5.3GB)推算,<strong>仅 50min 音频实测过</strong>;0.80&#x2F;24G 的 OOM 为实测(推理时触发)。</p>
+<p><strong>局限</strong>:实测仅用单一 50min 测试音频,样本单一;退化是否触发、段数、耗时、峰值显存等结论可能随音频不同(时长&#x2F;内容&#x2F;说话人&#x2F;语种)而变化,本文结论为该样本下的观测,不代表所有输入下的普遍表现。</p>
+</blockquote>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MOSS-Transcribe-Diarize/" rel="tag"># MOSS-Transcribe-Diarize</a>
+              <a href="/tags/SGLang-Omni/" rel="tag"># SGLang-Omni</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2026/07/31/sglang-omni-memory-decoding-tuning/" rel="prev" title="sglang-omni-memory-decoding-tuning">
+                  <i class="fa fa-angle-left"></i> sglang-omni-memory-decoding-tuning
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-user"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Alby</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/albyho" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+</body>
+</html>

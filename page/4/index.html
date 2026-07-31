@@ -150,18 +150,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">60</span>
+          <span class="site-state-item-count">61</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-count">22</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">30</span>
+        <span class="site-state-item-count">32</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -183,6 +183,193 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2020/05/05/mediasoup-01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Alby's blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2020/05/05/mediasoup-01/" class="post-title-link" itemprop="url">使用 ASP.NET Core 实现 mediasoup 的信令服务器</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-05-05 21:23:40" itemprop="dateCreated datePublished" datetime="2020-05-05T21:23:40+08:00">2020-05-05</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-05 02:58:35" itemprop="dateModified" datetime="2026-01-05T02:58:35+08:00">2026-01-05</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Mediasoup/" itemprop="url" rel="index"><span itemprop="name">Mediasoup</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p><img src="/postimages/mediasoup-01/001.jpg" alt="001"><br>(图片来源：李超)</p>
+<p><code>mediasoup</code> 的服务端由两部分构成：<br>1、使用 <code>C++</code> 编写的作为子进程的媒体层 (<code>ICE</code>, <code>DTLS</code>, <code>RTP</code> 等)。可执行文件在 <code>Linux</code> 或 <code>macOS</code> 上为 <code>mediasoup-worker</code>，在 <code>Windows</code> 上为 <code>mediasoup-worker.exe</code>。<br>2、使用 <code>Javascript</code>(<code>Typescript</code>) 编写的、基于 <code>Node.js</code> 的用于与 mediasoup-worker 进行通信的组件。因为官方或几乎所有第三方的 mediasoup 服务端都是使用的是 Node.js 来实现，所以官方提供一个中间层让开发者不直接和 mediassoup-workder 交互。</p>
+<p>本文主要讨论如何使用 <code>ASP.NET Core</code> 替换 Javascript(Node.js) 的实现。</p>
+<p><img src="/postimages/mediasoup-01/002.jpg" alt="002"><br>(备注：由于是在参考图基础上 PS 的，不太准确，有心情了再改吧。)</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/05/05/mediasoup-01/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2020/03/07/ffmepg-and-volume/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar200x200.png">
+      <meta itemprop="name" content="Alby">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Alby's blog">
+      <meta itemprop="description" content="Catch.">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Alby's blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2020/03/07/ffmepg-and-volume/" class="post-title-link" itemprop="url">FFmpeg 和音量</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-03-07 21:07:16" itemprop="dateCreated datePublished" datetime="2020-03-07T21:07:16+08:00">2020-03-07</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-01-05 02:58:35" itemprop="dateModified" datetime="2026-01-05T02:58:35+08:00">2026-01-05</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/FFmpeg/" itemprop="url" rel="index"><span itemprop="name">FFmpeg</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>本文整理一些使用 <code>FFmpeg</code> 进行音量控制的 Demo 。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/03/07/ffmepg-and-volume/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -937,192 +1124,8 @@
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2018/11/28/aspnetcore-extend-authorization/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar200x200.png">
-      <meta itemprop="name" content="Alby">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Alby's blog">
-      <meta itemprop="description" content="Catch.">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | Alby's blog">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2018/11/28/aspnetcore-extend-authorization/" class="post-title-link" itemprop="url">(Obsolete)ASP.NET Core 授权的扩展：自定义 Authorize Attribute 和 IApplicationModelProvide</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2018-11-28 19:45:20" itemprop="dateCreated datePublished" datetime="2018-11-28T19:45:20+08:00">2018-11-28</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-05 02:58:35" itemprop="dateModified" datetime="2026-01-05T02:58:35+08:00">2026-01-05</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/ASP-NET-Core/" itemprop="url" rel="index"><span itemprop="name">ASP.NET Core</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p><code>ASP.NET Core</code> 提供了基于角色( <code>Role</code> )、声明( <code>Chaim</code> ) 和策略 ( <code>Policy</code> ) 等的授权方式。在实际应用中，可能采用部门（ <code>Department</code> , 本文采用用户组 <code>Group</code>  ）、职位 ( 可继续沿用 <code>Role</code> )、权限( <code>Permission</code> )的方式进行授权。要达到这个目的，仅仅通过自定义 <code>IAuthorizationPolicyProvider</code> 是不行的。本文通过自定义 <code>IApplicationModelProvide</code> 进行扩展。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/11/28/aspnetcore-extend-authorization/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://blog.tubumu.com/2018/11/26/orchardcore-modular-and-multi-tenancy/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar200x200.png">
-      <meta itemprop="name" content="Alby">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Alby's blog">
-      <meta itemprop="description" content="Catch.">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content=" | Alby's blog">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2018/11/26/orchardcore-modular-and-multi-tenancy/" class="post-title-link" itemprop="url">OrchardCore 如何实现模块化( Modular )和 Multi-Tenancy</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2018-11-26 15:47:00" itemprop="dateCreated datePublished" datetime="2018-11-26T15:47:00+08:00">2018-11-26</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2026-01-05 02:58:35" itemprop="dateModified" datetime="2026-01-05T02:58:35+08:00">2026-01-05</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Code-Reading/" itemprop="url" rel="index"><span itemprop="name">Code Reading</span></a>
-        </span>
-    </span>
-
-  
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h2 id="一、概述"><a href="#一、概述" class="headerlink" title="一、概述"></a>一、概述</h2><p>通常我们会在 <code>Startup</code> 类通过 <code>void ConfigureServices(IServiceCollection services)</code> 配置应用的服务。常见的形如 <code>AddXXX</code> 的方法，实际上调用的都是 <code>IServiceCollection</code> 或直接说是 <code>ServiceCollection</code> 的 <code>AddSingleton</code> 、<code>AddTransient</code> 和 <code>AddScoped</code>等方法。调用<code>ApplicationBuilder</code> 的 <code>RequestDelegate Build()</code> 方法会调用 <code>IServiceCollection</code> 的扩展方法 <code>BuildServiceProvider</code> 会创建并返回一个 <code>ServiceProvider</code> 对象。<br>还会在 <code>Startup</code> 类通过 <code>void Configure(IApplicationBuilder app, IHostingEnvironment env)</code> 配置请求管道，在该方法内进行的主要操作是添加中间件。常见的形如 <code>UseMiddleware</code> 或 <code>UseXXX</code> 的方法，实际上调用的都是 <code>IApplicationBuilder</code> 或直接说是 <code>ApplicationBuilder</code> 的 <code>IApplicationBuilder Use(Func&lt;RequestDelegate, RequestDelegate&gt; middleware)</code> 方法，<code>Use</code> 方法并不是马上将中间件配置入请求管道，而是将“实例化中间件的方式”保存到 <code>ApplicationBuilder</code> 内部一个列表的操作。调用<code>ApplicationBuilder</code> 的 <code>RequestDelegate Build()</code> 方法会实例化中间件并把各个中间件串联起来。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2018/11/26/orchardcore-modular-and-multi-tenancy/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
-    <a class="extend prev" rel="prev" title="上一页" aria-label="上一页" href="/page/3/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><a class="page-number" href="/page/6/">6</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/5/"><i class="fa fa-angle-right"></i></a>
+    <a class="extend prev" rel="prev" title="上一页" aria-label="上一页" href="/page/3/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/3/">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/">5</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/5/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 </div>
